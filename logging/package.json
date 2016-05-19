@@ -1,7 +1,7 @@
 {
   "name": "@azure-iot/logging",
   "description": "Client and server side logging library",
-  "version": "1.0.0-rc.0",
+  "version": "1.0.0-rc.1",
   "repository": "https://github.com/Azure/azure-iot-library/tree/master/logging",
   "scripts": {
     "build": "npm run build:server && npm run build:client",
