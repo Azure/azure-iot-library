@@ -1,3 +1,7 @@
+# 1.0.0-rc.2
+
+- (SEMVER-PATCH) Document the currentPresentation grid input
+
 # 1.0.0-rc.0
 
 - (SEMVER-MINOR) Add application loading bar 
