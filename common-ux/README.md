@@ -29,11 +29,31 @@ Where `source` is an array, and `configuration` is an instance of a grid configu
 
 It optionally can have three other parameters:
 
-    [poll]="..." [resources]="..."
+    [poll]="..." [resources]="..." [currentPresentation]="..."
     
 `poll` can be used to control polling; when passed 'true' it is intended to start polling, when passed 'false' it is intended to stop polling, and when no arguments are passed it is expected to return whether or not it is polling.
 
 `resources` can be used to override resources; when not present, the default resources will be used. If present and a resource string that is expected is missing, the default resource will also be used.
+
+`currentPresentation` can be used to control the grid's presentation format (currently grid or list) at various responsive breakpoints. By default, the grid will display in list form regardless of width. A custom configuration might look something like the code below. Ensure that this configuration is created as a singleton with a lifetime of the entire application, as it is not cleaned up when a grid is destroyed:
+
+    import {GridBodyPresentation, PresentationOnBreakpoint} from '@azure-iot/common-ux/grid';
+    
+    /**
+     * Responsive presentation information for all grids
+     */
+    export const GridBreakpoints = PresentationOnBreakpoint([
+        {
+            breakpoint: 0,
+            presentation: GridBodyPresentation.List
+        },
+        {
+            breakpoint: 480,
+            presentation: GridBodyPresentation.Rows
+        }
+    ]);
+    
+You can then use the `GridBreakpoints` variable as the value for `currentPresentation`.
 
 Additionally you can use the performance spy and it will add break downs by column.
 
