@@ -1,0 +1,9 @@
+/src/typings/
+/client/
+/server/
+/node_modules/
+npm-debug.log
+tsd-debug.log
+/bunyan.js
+*.tgz
+**/coverage/

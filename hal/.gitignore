@@ -1,0 +1,11 @@
+# Modules
+/node_modules/
+/typings/
+
+# Built files
+*.js
+*.js.map
+*.d.ts
+!lib.d.ts
+!/lib/*.d.ts
+*.tgz

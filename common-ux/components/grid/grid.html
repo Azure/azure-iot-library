@@ -1,0 +1,68 @@
+<div class="status">
+    <span *ngIf="poll">{{Resources.LabelPoll || DefaultResources.LabelPoll}}: <input type="checkbox" (change)="poll(!poll())" [checked]="poll()"></span> {{Resources.LabelLastUpdated || DefaultResources.LabelLastUpdated}}: {{lastUpdated.toLocaleTimeString()}}
+</div>
+<div class="grid"
+    [ngClass]="classMap" 
+    *ngIf="currentPresentation.value === Presentation.Rows">
+    <div class="grid-header">
+        <div class="grid-cell selection" *ngIf="hasSelectionBox()" (click)="selectAll()">
+            <span class="glyphicon glyphicon-ok" *ngIf="areAllRowsSelected()"></span>
+        </div>
+        <div class="grid-cell" 
+            *ngFor="#column of configuration.columns; #i = index"
+            [attr.data-column-header]="'col' + i"
+            [ngClass]="headerClassMaps[i]"
+            [style.width]="columnWidths[i]"
+            (click)="setSort(column)">
+            <div class="resize-highlight"></div>
+            <div class="resize-handle left" 
+                *ngIf="i !== 0"
+                (touchstart)="touchStartColumnResize($event, i - 1)"
+                (mousedown)="startColumnResize($event, i - 1)">
+                <div class="resize-touch-indicator"></div>
+            </div>
+            <div class="content"
+                [ngClass]="{ 'sortable': column.sortable }"
+                (dblclick)="doubleClickHeader(i)"
+                (touchstart)="touchHeader(i)">
+                <span>{{column.header()}}</span>
+                <span class="glyphicon glyphicon-triangle-top" 
+                    [ngClass]="getArrowClass(true, i)"></span>
+                <span class="glyphicon glyphicon-triangle-bottom" 
+                    [ngClass]="getArrowClass(false, i)"></span>
+            </div>
+            <div class="resize-handle right" 
+                *ngIf="i !== configuration.columns.length - 1" 
+                (touchstart)="touchStartColumnResize($event, i)"
+                (mousedown)="startColumnResize($event, i)">
+                <div class="resize-touch-indicator"></div>
+            </div>
+        </div>
+    </div>
+    <grid-body-rows class="grid-body"
+        [rows]="rows"
+        [resources]="Resources"
+        (selectionChanged)="selectRow($event)"
+        (rowDoubleClick)="doubleClickRow($event)"
+        [configuration]="configuration"
+        [getIdentifier]="gridSource.getId"
+        [widths]="columnWidths"
+        [selectedRows]="gridSource.selection"
+        [spy-performance]="performanceSpyGroup + '-body'"
+        [spy-performance-enabled]="performanceSpyGroup !== null && performanceSpyEnabled">
+    </grid-body-rows>
+</div>
+<div class="list" *ngIf="currentPresentation.value === Presentation.List">
+    <grid-body-list
+        [rows]="rows"
+        [resources]="Resources"
+        (selectionChanged)="selectRow($event)"
+        (rowDoubleClick)="doubleClickRow($event)"
+        [configuration]="configuration"
+        [getIdentifier]="gridSource.getId"
+        [widths]="columnWidths"
+        [selectedRows]="gridSource.selection"
+        [spy-performance]="performanceSpyGroup + '-body'"
+        [spy-performance-enabled]="performanceSpyGroup !== null && performanceSpyEnabled">
+    </grid-body-list>
+</div>

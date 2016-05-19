@@ -1,0 +1,8 @@
+/src/
+/node_modules/
+/unit-test.html
+/index.ts
+/bunyan.js
+**/*.spec.*
+**/!(*d).ts
+**/coverage/

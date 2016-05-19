@@ -1,0 +1,30 @@
+<div class="entry"
+    *ngFor="#row of rows"
+    *ngForTrackBy="trackRows"
+    (dblclick)="doubleClickRow(row)"
+    [spy-performance]="performanceSpyGroup + '-row'"
+    [spy-performance-enabled]="performanceSpyGroup !== null && performanceSpyEnabled"
+    [ngClass]="{'selected': !!selectedRows.value[getIdentifier(row)], 'expanded': !!expandedRows[getIdentifier(row)]}">
+    <div class="preview">
+        <div class="expansion" (click)="toggleExpansion(row)">
+            <i class="glyphicon glyphicon-chevron-down"></i>
+        </div>
+        <div class="field-label">{{configuration.columns[0].value(row)}}</div>
+        <div class="selection" (click)="selectRow(row)">
+            <i class="glyphicon glyphicon-check"></i>
+            <i class="glyphicon glyphicon-unchecked"></i>
+        </div>
+    </div>
+    <div class="details"
+        *ngIf="!!expandedRows[getIdentifier(row)]">
+        <div class="row" 
+            *ngFor="#column of configuration.columns | slice:1"
+            *ngForTrackBy="trackColumns">
+            <div class="col-xs-4 field-label">{{column.header()}}</div>
+            <div class="col-xs-8">{{column.value(row)}}</div>
+        </div>
+    </div>
+</div>
+<div class="empty" *ngIf="rows && rows.length === 0">
+    {{Resources.NoRowsFound || DefaultResources.NoRowsFound}}
+</div>

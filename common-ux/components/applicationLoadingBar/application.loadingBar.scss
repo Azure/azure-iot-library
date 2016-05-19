@@ -1,0 +1,29 @@
+@import "common-theme";
+
+.progress-bar-container {
+    background-color: $progress-bar-container-background-color;
+    height: $progress-bar-container-height;
+    width: 100%;  
+    position:fixed;
+}
+
+.progress-bar {
+    background-color: $progress-bar-background-color;
+    height: 100%;
+    margin-left: 0%;
+    margin-right: 100 - $progress-bar-width;
+    width: $progress-bar-width;
+    border-radius: $progress-bar-border-radius;
+    animation-name: slide-animation;
+    position: relative;
+    opacity: 0.8;
+    animation-duration: 1s;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation-timing-function: linear;
+}
+   
+@keyframes slide-animation {
+    from {margin-left: 0%; margin-right:100 - $progress-bar-width}
+    to {margin-left: 100 - $progress-bar-width; margin-right:0%}
+}

@@ -1,0 +1,14 @@
+# libraries/packages
+node_modules
+typings
+
+# output files/packages
+/*.d.ts
+/grid/**/*
+/unpacked.js
+/unpacked.js.map
+/client.js
+/client.js.map
+/client.min.js
+*.tgz
+/dest/**/*

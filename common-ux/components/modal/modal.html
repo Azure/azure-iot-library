@@ -1,0 +1,23 @@
+<div class="modal-container fade" [ngClass]="{'in': isVisible}">
+    <div class="blast-screen" (click)="onCancel.emit(false)"></div>
+    <div class="modal-body">
+        <h3 class="title">{{title}}</h3>
+        <div class="content">
+            <ng-content></ng-content>
+        </div>
+        <div class="actions-container">
+            <div class="actions">
+                <button class="btn btn-primary"
+                    *ngIf="successText"
+                    (click)="onSuccess.emit(true)">
+                    {{successText}}
+                </button>
+                <button class="btn btn-default"
+                    *ngIf="cancelText"
+                    (click)="onCancel.emit(false)">
+                    {{cancelText}}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

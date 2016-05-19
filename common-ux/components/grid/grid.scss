@@ -1,0 +1,253 @@
+@import "common-theme";
+
+$resize-handle-width: 21px;
+$resize-handle-offset: floor($resize-handle-width / 2) + $grid-light-border-width;
+$resize-touch-indicator-size: 21px;
+$resize-touch-indicator-border: 5px double rgba(white, 0.9);
+$resize-touch-indicator-offset: calc(50% - #{ceil($resize-touch-indicator-size / 2)});
+$resize-highlight-width: 5px;
+$resize-highlight-margin: floor($resize-highlight-width/2) + $grid-light-border-width;
+$sorting-arrow-scale: 0.75;
+$sorting-arrow-dimensions: 14px;
+$sorting-arrow-bottom-offset: $sorting-arrow-scale * $sorting-arrow-dimensions + 2px;
+
+.status {
+    text-align: right;
+    font-size: $grid-status-size;
+    color: $grid-status-color;
+}
+
+.grid {
+    width: 100%;
+    overflow-x: auto;
+    
+    .grid-header {
+        display: flex;
+        .grid-cell {
+            font-weight: bold;
+            border-bottom: $grid-heavy-border;
+            overflow-x: default;
+            position: relative;
+            
+            .content {
+                overflow-x: hidden;
+                
+                .glyphicon {
+                    position: absolute;
+                    right: $gutter-sm;
+                    display: none;
+                    opacity: 0.2;
+                    transform: scale($sorting-arrow-scale);
+                    
+                    &.current {
+                        opacity: 1;
+                    }
+                }
+                
+                .glyphicon-triangle-top {
+                    top: $gutter-xs;
+                }
+                
+                .glyphicon-triangle-bottom {
+                    top: $sorting-arrow-bottom-offset;
+                }
+            
+                &.sortable {
+                    
+                    cursor: pointer;
+                     
+                    .glyphicon {
+                        display: block;
+                    }
+                }
+            }
+            
+            &.tapped {
+                background-color: rgba($button-hover-background-color, 0.25);
+            }
+            
+            &.selection:hover {
+                background-color: $grid-row-hover;
+            }
+        }
+    }
+    .grid-body .grid-row {
+        display: flex;
+        &:not(:last-child)>.grid-cell {
+            border-bottom: $grid-light-border;
+        }
+        
+        .grid-cell {
+            overflow-x: hidden;
+        }
+    }
+    
+    .grid-cell {
+        padding: $grid-cell-padding;
+        flex-grow: 0;
+        flex-shrink: 0;
+        position: relative;
+        min-width: $grid-selection-cell-width;
+        
+        &:last-child {
+            flex-grow: 1;
+            flex-shrink: 1;
+        }
+        
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: $resize-handle-width;
+            background-color: transparent;
+            cursor: col-resize;
+            
+            &.left {
+                left: -$resize-handle-offset;
+            }
+            
+            &.right {
+                right: -$resize-handle-offset;
+            }
+        }
+        
+        .resize-touch-indicator {
+            width: $resize-touch-indicator-size;
+            height: $resize-touch-indicator-size;
+            border-radius: 100%;
+            border: $resize-touch-indicator-border;
+            top: $resize-touch-indicator-offset;
+            left: $resize-touch-indicator-offset;
+            position: absolute;
+            display: none;
+            background-color: $button-hover-background-color;
+            z-index: $layer-accent;
+        }
+        
+        .resize-highlight {
+            position: absolute;
+            display: none;
+            top: -$resize-highlight-margin;
+            left: -$resize-highlight-margin;
+            right: -$resize-highlight-margin;
+            bottom: -$resize-highlight-margin;
+            z-index: $layer-accent;
+            pointer-events: none;
+        }
+        
+        &.tapped {
+            .resize-touch-indicator, .resize-highlight {
+                display: block;
+            }
+            
+        }
+        
+        &:not(:first-child) {
+            border-left: $grid-light-border;
+            margin-left: -$grid-light-border-width;
+        }
+        
+        &:last-child {
+            flex-grow: 1;
+        }
+        
+        &.selection {
+            width: $grid-selection-cell-width;
+            flex: none;
+            cursor: pointer;
+            display: none;
+        }
+    }
+    
+    &.selection-enabled {
+        .grid-cell.selection {
+            display: block;
+        }
+        .grid-body .grid-row {
+            .grid-cell {
+                cursor: pointer;
+            }
+            
+            &:hover .grid-cell {
+                background-color: $grid-row-hover;
+            }
+            
+            .grid-cell.selection .glyphicon {
+                opacity: 0;
+            }
+            
+            &.selected .grid-cell {
+                background-color: $grid-row-selected;
+                
+                &.selection .glyphicon {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+    
+    .empty {
+        text-align: center;
+        padding: $gutter-md;
+    }
+}
+
+.list {
+    
+    margin-top: $gutter-lg;
+
+    .entry {
+        position: relative;
+        padding: $gutter-lg;
+        
+        &:not(:last-child) {
+            border-bottom: $grid-light-border;
+        }
+        
+        .details, .preview {
+            margin-left: $gutter-lg;
+            margin-right: $gutter-lg;
+        }
+        
+        .details {
+            margin-top: $gutter-sm;
+        }
+        
+        .expansion {
+            width: $gutter-lg;
+            position: absolute;
+            left: $gutter-sm;
+            transform: rotateZ(0);
+            transition: transform 250ms;
+            text-align: center;
+        }
+        
+        .selection {
+            width: $gutter-lg;
+            position: absolute;
+            right: $gutter-sm;
+            top: $gutter-lg;
+            
+            .glyphicon-check { display: none; }
+            .glyphicon-unchecked { display: block; }
+        }
+        
+        &.selected {
+            
+            background-color: $grid-row-selected;
+            
+            .selection {
+                .glyphicon-check { display: block; }
+                .glyphicon-unchecked { display: none; }
+            }
+        }
+        
+        &.expanded .expansion {
+            transform: rotateZ(-90deg);
+        }
+        
+        .field-label {
+            font-weight: bold;
+        }
+    }
+}

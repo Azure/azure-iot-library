@@ -1,0 +1,68 @@
+// Universal Variables
+$layer-step: 1000;
+$layer-accent: 0.5 * $layer-step;
+$layer-loading: 0.75 * $layer-step;
+$layer-header-z-index: 1 * $layer-step;
+$layer-modal-z-index: 2 * $layer-step;
+
+// Universal gutter sizes
+$gutter-xs: 5px;
+$gutter-sm: 10px;
+$gutter-md: 15px;
+$gutter-lg: 20px;
+
+// Breakpoints: 480 <= xs < 768 <= sm < 992 <= md < 1200 <= lg
+$breakpoint-xs: 480px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 992px;
+$breakpoint-lg: 1200px;
+
+// Grid Variables
+$grid-light-border-width: 1px;
+$grid-light-border: $grid-light-border-width solid rgba(#dadada, 0.5);
+$grid-heavy-border: 2px solid black;
+$grid-cell-padding: 5px;
+$grid-selection-cell-width: 32px;
+$grid-row-hover: #f0f0f0;
+$grid-row-selected: #ddd;
+$grid-status-size: 0.7em;
+$grid-status-color: lightgray;
+
+// Modal Variables
+$modal-container-z-index: $layer-modal-z-index;
+$modal-fade-time: 250ms;
+$modal-blast-color: rgba(#222, 0.9);
+$modal-border: 1px solid $modal-blast-color;
+$modal-color: white;
+$modal-margin-top: 15vh;
+$modal-max-height: 100vh - 2 * $modal-margin-top;
+$modal-content-min-height: 2em;
+$modal-max-width-xs: 600px;
+$modal-max-width-lg: 800px;
+$modal-gutter-size: calc(2% + #{$gutter-sm});
+$modal-button-basis: 200px;
+
+// Button Colors
+$button-hover-color: white;
+$button-hover-background-color: #286090;
+$button-hover-background-border: #284990;
+$button-active-color: white;
+$button-active-background-color: #3276b1;
+$button-active-background-border: #285e8e;
+$button-hover-disabled: black;
+
+// Dropdowns
+$dropdown-input-md-width: 120px;
+
+// Loading bar
+$loading-width: 60%;		
+$loading-height: 20px;		
+$loading-offset-top: calc(50% - #{$loading-height / 2});		
+$loading-offset-left: (100% - $loading-width) / 2;		
+
+// Application Loading bar
+$progress-bar-container-background-color: white;
+$progress-bar-background-color: rgb(125, 188, 0);
+$progress-bar-container-height: 4px;
+$progress-bar-border-radius: 2px;
+$progress-bar-width: 20%;

@@ -1,0 +1,23 @@
+<div class="grid-row"
+    *ngFor="#row of rows"
+    *ngForTrackBy="trackRows"
+    (click)="selectRow(row)"
+    (dblclick)="doubleClickRow(row)"
+    [spy-performance]="performanceSpyGroup + '-row'"
+    [spy-performance-enabled]="performanceSpyGroup !== null && performanceSpyEnabled"
+    [ngClass]="{'selected': !!selectedRows.value[getIdentifier(row)]}">
+    <div class="grid-cell selection">
+        <span class="glyphicon glyphicon-ok"></span>
+    </div>
+    <div class="grid-cell" 
+        *ngFor="#column of configuration.columns; #i = index"
+        *ngForTrackBy="trackColumns"
+        [spy-performance]="performanceSpyGroup + '-column-' + i"
+        [spy-performance-enabled]="performanceSpyGroup !== null && performanceSpyEnabled"
+        [style.width]="widths[i]">
+        {{column.value(row)}}
+    </div>
+</div>
+<div class="empty" *ngIf="rows && rows.length === 0">
+    {{Resources.NoRowsFound || DefaultResources.NoRowsFound}}
+</div>

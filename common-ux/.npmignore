@@ -1,0 +1,18 @@
+# source
+components
+test
+dest
+
+# libraries/packages
+node_modules
+typings
+
+# build process
+tsconfig.json
+webpack.config.js
+gulpfile.js
+tsd.json
+
+# meta
+*.tgz
+.npmignore

@@ -1,0 +1,92 @@
+@import "common-theme";
+
+.modal-container {
+    transition: opacity;
+    transition-duration: $modal-fade-time;
+    
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    
+    z-index: $modal-container-z-index;
+    
+    &.fade {
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    &.fade.in {
+        opacity: 1;
+        pointer-events: all;
+    }
+    
+    .blast-screen {
+        background-color: $modal-blast-color;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+    }
+    
+    .modal-body {
+        background-color: $modal-color;
+        margin: auto;
+        max-height: $modal-max-height;
+        overflow-y: auto;
+        margin-top: $modal-margin-top;
+        border-top: $modal-border;
+        border-bottom: $modal-border;
+        display: flex;
+        flex-direction: column;
+        
+        &>*{
+            max-width: $modal-max-width-xs;
+            width: 100%;
+            margin: auto;
+        }
+        
+        @media (min-width: $breakpoint-lg) {
+            &>*{
+                max-width: $modal-max-width-lg;
+            }
+        }
+        
+        .title {
+            margin: $modal-gutter-size auto;
+            flex-basis: auto;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            min-height: 1em;
+        }
+        
+        .content {
+            overflow-y: auto;
+            min-height: $modal-content-min-height;
+            flex-grow: 1;
+        }
+        
+        .actions-container {
+            flex-basis: auto;
+            margin-top: $modal-gutter-size;
+            
+            .actions {
+                display: flex;
+                justify-content: flex-end;
+                
+                .btn {
+                    flex-basis: $modal-button-basis;
+                    flex-shrink: 1;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    
+                    &:not(:last-child) {
+                        margin-right: $modal-gutter-size;
+                    }
+                }
+            }
+        }
+    }
+}
