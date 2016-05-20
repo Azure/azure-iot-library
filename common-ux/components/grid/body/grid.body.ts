@@ -1,63 +1,64 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {Output, Input, ViewEncapsulation, ChangeDetectionStrategy, EventEmitter, ChangeDetectorRef, SimpleChange} from 'angular2/core';
+import {ViewEncapsulation, ChangeDetectionStrategy, EventEmitter, ChangeDetectorRef, SimpleChange} from 'angular2/core';
 import {GridConfiguration, SelectionStyle} from '../grid.configuration';
 import {BehaviorSubject, Subscription} from 'rxjs/Rx';
 import {GlobalContext} from '../../globalContext';
 
 export class GridBody<T> extends GlobalContext {
+
     /**
      * Rows
      */
-    @Input() public rows: T[];
+    public rows: T[];
 
     /**
      * Column widths
      */
-    @Input() public widths: string[];
+    public widths: string[];
 
     /**
      * This is the configuration that we use to determine what columns to use
      */
-    @Input() public configuration: GridConfiguration<T>;
+    public configuration: GridConfiguration<T>;
 
     /**
      * This is the configuration that we use to determine what columns to use
      */
-    @Input() public getIdentifier: (T) => string;
+    public getIdentifier: (T) => string;
 
     /**
      * Selected rows
      */
-    @Input() public selectedRows: BehaviorSubject<{ [key: string]: T }>;
+    public selectedRows: BehaviorSubject<{ [key: string]: T }>;
 
     /**
      * This means that there is a performance spy; if so, use the group specified for sub groups for columns
      * OPTIONAL: by default it is null; if the 'spy-performance' attribute is set, then it will enhance the groups with those in the grid
      */
-    @Input('spy-performance') performanceSpyGroup: string = null;
+    public performanceSpyGroup: string = null;
 
     /**
      * This is whether or not to enable performance logging through performance spies
      * OPTIONAL: by default it is true, but spy performance won't be enabled unless the 'spy-performance' attribute is present
      */
-    @Input('spy-performance-enabled') performanceSpyEnabled: boolean = true;
+    public performanceSpyEnabled: boolean = true;
 
     /**
      * This is the selection changed event that returns the ids of what was selected
      */
-    @Output() public selectionChanged: EventEmitter<T[]> = new EventEmitter<T[]>();
-    
+    public selectionChanged: EventEmitter<T[]> = new EventEmitter<T[]>();
+
     /**
      * This is the double click of a row event
      */
-    @Output() public rowDoubleClick: EventEmitter<T> = new EventEmitter<T>();
+    public rowDoubleClick: EventEmitter<T> = new EventEmitter<T>();
 
     /**
      * Subscription to selected rows
      */
     public subscription: Subscription;
-    
+
     /**
      * Timeout used to avoid changing selection on double click
      */
@@ -73,14 +74,14 @@ export class GridBody<T> extends GlobalContext {
                 if (this.subscription) {
                     this.subscription.unsubscribe();
                 }
-                
+
                 this.subscription = this.selectedRows.subscribe(selection => {
                     this.cd.markForCheck(); // forces an update to change detection
                 });
             }
         }
     }
-    
+
     ngOnDestroy() {
         if (this.subscription && !this.subscription.isUnsubscribed) {
             this.subscription.unsubscribe();
@@ -112,7 +113,7 @@ export class GridBody<T> extends GlobalContext {
             this.selectedRows.next(selection);
         });
     }
-    
+
     doubleClickRow(row: T) {
         this.rowDoubleClick.emit(row);
         if (this.clickTimeout) {
