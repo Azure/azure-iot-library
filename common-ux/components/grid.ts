@@ -25,6 +25,11 @@ const arrowsOffset: number = 20;
 export class Grid<T> extends GlobalContext {
 
     /**
+     * Resources; see GlobalContext for more information
+     */
+    @Input('resources') Resources;
+
+    /**
      * This is the source that is passed in; it can be either an array, or a full grid source
      */
     @Input() public source: GridSource<T> | T[];
@@ -52,7 +57,7 @@ export class Grid<T> extends GlobalContext {
      * OPTIONAL: when not present, the checkbox for turning on and off polling is hidden
      */
     @Input() public poll: (shouldPoll?: boolean) => boolean;
-    
+
     /**
      * This is the current presentation
      */
@@ -62,7 +67,7 @@ export class Grid<T> extends GlobalContext {
      * This is the selection changed event that returns the ids of what was selected
      */
     @Output() public selectionChanged: EventEmitter<T[]> = new EventEmitter<T[]>();
-    
+
     /**
      * This occurs when a row is double clicked
      */
@@ -233,7 +238,7 @@ export class Grid<T> extends GlobalContext {
             this.gridSource.filter.next(filter);
         }
     }
-    
+
     /**
      * If we haven't previously sorted the grid, do so here
      */
@@ -398,7 +403,7 @@ export class Grid<T> extends GlobalContext {
         document.body.removeEventListener('mouseup', this.stopColumnResize);
         document.body.classList.remove('resizing-columns');
     };
-    
+
     endResize() {
         setTimeout(() => {
             this.columnResize.startX = 0;
@@ -417,9 +422,9 @@ export class Grid<T> extends GlobalContext {
     }
 
     doubleClickHeader(columnIndex) {
-        this.configuration.columns[columnIndex].width 
-            = this.element.nativeElement.querySelector(`[data-column-header=col${columnIndex}] .content span`).offsetWidth 
-            + doubleCellPadding 
+        this.configuration.columns[columnIndex].width
+            = this.element.nativeElement.querySelector(`[data-column-header=col${columnIndex}] .content span`).offsetWidth
+            + doubleCellPadding
             + arrowsOffset;
         this.updateWidths();
     }
@@ -447,17 +452,17 @@ export class Grid<T> extends GlobalContext {
             return Math.floor(100 / this.configuration.columns.length) + '%';
         }
     }
-    
+
     doubleClickRow(row: T) {
         this.rowDoubleClick.emit(row);
     }
-    
+
     getArrowClass(ascending: boolean, index: number) {
         var column = this.configuration.columns[index];
         var filter = this.gridSource.filter.value;
-        
+
         if (!filter || !filter.sorted) return;
-        
+
         return {
             'current': column.key === filter.sorted.columnKey && filter.sorted.ascending === ascending
         };

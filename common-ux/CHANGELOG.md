@@ -1,10 +1,11 @@
 # 1.0.0-rc.2
 
 - (SEMVER-PATCH) Document the currentPresentation grid input
+- (SEMVER-PATCH) Move component inputs and outputs from superclass to component class
 
 # 1.0.0-rc.0
 
-- (SEMVER-MINOR) Add application loading bar 
+- (SEMVER-MINOR) Add application loading bar
 - (SEMVER-MINOR) Single select toggles selection
 - (SEMVER-MINOR) Added the ability to change the presentation of grid data between rows and lists
 - (SEMVER-MINOR) Fix for no rows message not being displayed
