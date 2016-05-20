@@ -1,4 +1,4 @@
-# azure-iot-hal
+# @azure-iot/hal
 
 A decorator-based library for implementing HAL-compliant services.
 
@@ -8,9 +8,9 @@ Clone and run `npm install`.
 
 ## Installation
 
-`npm install --save @azure-iot/azure-iot-hal`
+`npm install --save @azure-iot/hal`
 
-## API `@azure-iot/azure-iot-hal/api`
+## API `@azure-iot/hal/api`
 
 ### Class Decorators
 
@@ -89,7 +89,7 @@ Returns the `express.Application` for the given server instance.
 #### `hal.discovery`
 An Express handler which provides links to all discoverable routes.
 
-## Types `@azure-iot/azure-iot-hal/types`
+## Types `@azure-iot/hal/types`
 
 #### `Method`
 An enum shorthand for the most common HTTP methods.
@@ -106,8 +106,8 @@ An interface representing the form of a HAL link.
 ## Example
 
 ```ts
-import {route, middleware, hal, provides} from '@azure-iot/azure-iot-hal/api';
-import {Method, LinkRelation, Hal} from '@azure-iot/azure-iot-hal/types';
+import {route, middleware, hal, provides} from '@azure-iot/hal/api';
+import {Method, LinkRelation, Hal} from '@azure-iot/hal/types';
 
 @provides('ns', { href: '/docs/ns/:rel', auto: true })
 @middleware(expressMiddlewareFunction)
