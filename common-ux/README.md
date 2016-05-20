@@ -1,15 +1,15 @@
 <!--
 TODO: flesh this out more
 -->
-# Azure IoT Common UX
+# @azure-iot/common-ux
 
 This package contains a number of bundled components shared across the Reference UXs.
 
 ## Consumption
 
-    <script src="node_modules/@azure-iot/azure-iot-common-ux/client.js"></script>
+    <script src="node_modules/@azure-iot/common-ux/client.js"></script>
 
-    import {Grid} from '@azure-iot/azure-iot-common-ux/grid'
+    import {Grid} from '@azure-iot/common-ux/grid'
 
 ## Building Locally
 
@@ -106,7 +106,7 @@ You can also programmatically control if a spy is enabled with the attribute `sp
 
 You can also universally turn of performance logging by setting the global check to false:
 
-    import {PerformanceSpy} from '@azure-iot/azure-iot-common-ux/performance-spy';
+    import {PerformanceSpy} from '@azure-iot/common-ux/performance-spy';
     
     PerformanceSpy.globallyEnabled = false
 
@@ -114,7 +114,7 @@ You can also universally turn of performance logging by setting the global check
 
 Including the theme folder as part of your sass compile will allow you to use the included variables. The path when installed looks like:
 
-    ./node_modules/@azure-iot/azure-iot-common-ux/theme
+    ./node_modules/@azure-iot/common-ux/theme
 
 Once you've done that, you can import anything in that directory in the following form:
 

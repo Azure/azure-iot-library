@@ -1,4 +1,4 @@
-# azure-iot-logging
+# @azure-iot/logging
 
 A wrapper aroung the [Bunyan](https://github.com/trentm/node-bunyan) logging library that can be run either in a browser or on a Node.JS server.
 
@@ -8,28 +8,28 @@ Clone and run `npm install`.
 
 ## Installation
 
-`npm install --save @azure-iot/azure-iot-logging`
+`npm install --save @azure-iot/logging`
 
 ## Usage
 
 This package exposes two different versions of the same interface, one for
 browser (client) and one for server.
 
-**Client Module** - '@azure-iot/azure-iot-logging/client'
+**Client Module** - '@azure-iot/logging/client'
 
-**Server Module** - '@azure-iot/azure-iot-logging/server'
+**Server Module** - '@azure-iot/logging/server'
 
 The server version can be imported using ES6 or AMD(Node.JS) syntax, such as:
 
 ```js
-import {BunyanLogger} from '@azure-iot/azure-iot-logging/server';
+import {BunyanLogger} from '@azure-iot/logging/server';
 ```
 
 The client package is bundled using SystemJS syntax and can be included using the
 following script import:
 
 ```html
-<script src="node_modules/@azure-iot/azure-iot-logging/client/client.js"></script>
+<script src="node_modules/@azure-iot/logging/client/client.js"></script>
 ```
 
 From there, you can import into your SystemJS modules or using ES6 syntax in TypeScript
@@ -44,7 +44,7 @@ object with its constructor as
 See below for an example.
 
 ```js
-import {BunyanLogger, PageView} from '@azure-iot/azure-iot-logging/server';
+import {BunyanLogger, PageView} from '@azure-iot/logging/server';
 
 let logger = new BunyanLogger({
   name: 'my-app',
@@ -82,7 +82,7 @@ middleware and routes but potentially before other error handling middleware.
 **Example**
 
 ```js
-import {BunyanLogger, ExpressMiddleware} from '@azure-iot/azure-iot-logging/server';
+import {BunyanLogger, ExpressMiddleware} from '@azure-iot/logging/server';
 import * as express from 'express';
 
 let logger = new BunyanLogger({

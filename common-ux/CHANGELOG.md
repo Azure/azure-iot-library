@@ -2,6 +2,7 @@
 
 - (SEMVER-PATCH) Document the currentPresentation grid input
 - (SEMVER-PATCH) Move component inputs and outputs from superclass to component class
+- (SEMVER-PATCH) Fixed package names in README.md
 
 # 1.0.0-rc.0
 
