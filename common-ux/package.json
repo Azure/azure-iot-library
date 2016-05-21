@@ -1,7 +1,7 @@
 {
   "name": "@azure-iot/common-ux",
   "description": "Common UX controls used in microservices",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "repository": "https://github.com/Azure/azure-iot-library/tree/master/common-ux",
   "scripts": {
     "test": "gulp test",
