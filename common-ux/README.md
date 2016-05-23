@@ -110,6 +110,30 @@ You can also universally turn of performance logging by setting the global check
     
     PerformanceSpy.globallyEnabled = false
 
+## Set Editor
+
+The set editor lets you add/remove available items from a current set, like when selecting columns.
+
+It is used like this:
+
+    <set-editor [available]="..." [current]="..." [getLabel]="..."></set-editor>
+
+Where `available` is an observable of the available options, `current` is a behavior subject of the current set of options, and `getLabel` is a function which takes a single argument of an option and returns a string to present in the UX.
+
+It is optionally passed a `getId` function which behaves like getLabel but is used to uniquely identify options.
+
+## List Group
+
+List group is like a multi-select control, but because it isn't native it doesn't change in appearance across browsers.
+
+It is used like this:
+
+    <list-group [options]="..." [selection]="..." [getLabel]="..."></list-group>
+    
+Where `options` is an array of the current options, `selection` is a behavior subject that is updated whenever changes occur, and `getLabel` is a function function which takes a single argument of an option and returns a string to present in the UX.
+
+It is optionally passed a `getId` function which behaves like getLabel but is used to uniquely identify options.
+
 ## Theme
 
 Including the theme folder as part of your sass compile will allow you to use the included variables. The path when installed looks like:

@@ -28,6 +28,11 @@ $grid-row-selected: #ddd;
 $grid-status-size: 0.7em;
 $grid-status-color: lightgray;
 
+// list group colors
+$list-group-border: 1px solid #ddd;
+$list-group-padding: 5px 15px;
+$list-group-border-radius: 4px;
+
 // Modal Variables
 $modal-container-z-index: $layer-modal-z-index;
 $modal-fade-time: 250ms;
