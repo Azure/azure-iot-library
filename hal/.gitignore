@@ -3,6 +3,7 @@
 /typings/
 
 # Built files
+/coverage/
 *.js
 *.js.map
 *.d.ts

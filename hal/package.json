@@ -1,13 +1,13 @@
 {
   "name": "@azure-iot/hal",
   "description": "Decorator library for HAL-based routes",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "scripts": {
     "postinstall": "tsd install",
     "prebuild": "npm run lint",
     "build": "tsc",
     "pretest": "npm run build",
-    "test": "jasmine-node .",
+    "test": "istanbul cover --include-all-sources -x **/*.spec.* node_modules/jasmine-node/lib/jasmine-node/cli.js .",
     "lint": "tslint ./src/**/*.ts",
     "prepackage": "npm run build",
     "package": "npm pack",
@@ -17,6 +17,7 @@
   "devDependencies": {
     "body-parser": "^1.14.2",
     "cookie-parser": "^1.4.1",
+    "istanbul": "^0.4.3",
     "jasmine-core": "2.4.1",
     "jasmine-node": "^1.14.5",
     "rimraf": "^2.5.1",
