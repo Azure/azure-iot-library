@@ -1,3 +1,8 @@
+# 1.0.0-rc.3
+
+- (SEMVER-MINOR) Added list group and set editor components
+- (SEMVER-MINOR) Improved stability of the build process
+
 # 1.0.0-rc.2
 
 - (SEMVER-PATCH) Document the currentPresentation grid input

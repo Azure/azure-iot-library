@@ -1,0 +1,31 @@
+<div class="row">
+    <div class="col-sm-5">
+        <list-group [options]="actualAvailable" [selection]="toAdd" [getLabel]="getLabel" [getId]="getId"></list-group>
+    </div>
+    <div class="col-sm-2 text-center">
+        
+        <!-- button only display with larger form factor -->
+        <button class="btn btn-default btn-block large-form-factor" (click)="add()" [disabled]="!canAdd">
+            {{Resources.SetAdd || DefaultResources.SetAdd}}
+            <span class="glyphicon glyphicon-chevron-right"></span>
+        </button>
+        <button class="btn btn-default btn-block large-form-factor" (click)="remove()" [disabled]="!canRemove">
+            <span class="glyphicon glyphicon-chevron-left"></span>
+            {{Resources.SetRemove || DefaultResources.SetRemove}}
+        </button>
+        
+        <!-- button only display with smaller form factor -->
+        <button class="btn btn-default small-form-factor" (click)="add()" [disabled]="!canAdd">
+            {{Resources.Add || DefaultResources.SetAdd}}
+            <span class="glyphicon glyphicon-chevron-down"></span>
+        </button>
+        <button class="btn btn-default small-form-factor" (click)="remove()" [disabled]="!canRemove">
+            <span class="glyphicon glyphicon-chevron-up"></span>
+            {{Resources.SetRemove || DefaultResources.SetRemove}}
+        </button>
+        
+    </div>
+    <div class="col-sm-5">
+        <list-group [options]="actualCurrent" [selection]="toRemove" [getLabel]="getLabel" [getId]="getId"></list-group>
+    </div>
+</div>

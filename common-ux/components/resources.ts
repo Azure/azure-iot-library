@@ -6,5 +6,7 @@
 export var DefaultResources = {
     LabelPoll: 'Poll',
     LabelLastUpdated: 'Last Updated',
-    NoRowsFound: 'No Rows Found'
+    NoRowsFound: 'No Rows Found',
+    SetAdd: 'Add',
+    SetRemove: 'Remove'
 }

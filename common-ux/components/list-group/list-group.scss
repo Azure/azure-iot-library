@@ -1,0 +1,16 @@
+@import "common-theme";
+
+.list-group {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    border: $list-group-border;
+    border-radius: $list-group-border-radius;
+    margin-bottom: 0px;
+    
+    .list-group-item {
+        border: 0px;
+        padding: $list-group-padding;
+        cursor: pointer;
+    }
+}

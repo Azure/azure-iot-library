@@ -1,0 +1,30 @@
+@import "common-theme";
+
+@media only screen and (max-width :$breakpoint-sm) {
+    button {
+        margin: $gutter-xs 0 $gutter-xs 0;       
+    }
+    
+    .btn-block {
+        width: 100px;
+        display: table-cell;
+    }
+}
+
+@media only screen and (min-width :$breakpoint-sm) {
+    .small-form-factor {
+        display: none;
+    }    
+}
+
+@media only screen and (max-width :$breakpoint-sm) {
+    .large-form-factor {
+        display: none;
+    }    
+}
+
+list-group {
+    position: relative;
+    height: 200px;
+    display: block;
+}
