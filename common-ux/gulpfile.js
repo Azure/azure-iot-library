@@ -42,18 +42,8 @@ gulp.task('apply:copyright:components', done => glob('components/**/*.ts', apply
 gulp.task('apply:copyright:test', done => glob('test/**/*.js', applyCopyright(done)));
 gulp.task('apply:copyright', ['apply:copyright:components', 'apply:copyright:test']);
 
-// Clean dest folder
-gulp.task('clean-test', () => {
-    rimraf.sync('dest');
-});
-
-// Clean client.js
-gulp.task('clean-bundle', () => {
-    rimraf.sync('client.js');
-});
-
 // Builds and bundles the source code - excludes the test files
-gulp.task('build-bundle', ['clean-bundle'], () => {
+gulp.task('build-bundle', () => {
     let tsStream = gulp.src('components/**/!(*spec).ts')
         .pipe(sourcemaps.init())
         .pipe(ts(tsconfig.compilerOptions));
@@ -81,7 +71,7 @@ gulp.task('build-bundle', ['clean-bundle'], () => {
 
 // Builds source and test code without bundling - this task is required for testing. 
 // Karma can import test files not modules 
-gulp.task('build-test', ['clean-test'], () => {
+gulp.task('build-test', () => {
     let tsStream = gulp.src(['components/**/*.ts'])
         .pipe(sourcemaps.init())
         .pipe(ts(tsconfig.compilerOptions));
