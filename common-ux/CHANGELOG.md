@@ -3,6 +3,8 @@
 - (SEMVER-MINOR) Added list group and set editor components
 - (SEMVER-MINOR) Improved stability of the build process
 
+- (SEMVER-PATCH) Fixes to es5 build
+
 # 1.0.0-rc.2
 
 - (SEMVER-PATCH) Document the currentPresentation grid input
