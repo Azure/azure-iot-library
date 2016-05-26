@@ -1,6 +1,7 @@
 # 1.0.0-rc.4
 
 - (SEMVER-PATCH) Fixes to breakpoint gap in set editor
+- (SEMVER-PATCH) Added button color scheme and styles
 
 # 1.0.0-rc.3
 

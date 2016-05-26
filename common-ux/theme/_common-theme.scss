@@ -1,3 +1,5 @@
+@import "buttons";
+
 // Universal Variables
 $layer-step: 1000;
 $layer-accent: 0.5 * $layer-step;
@@ -46,15 +48,6 @@ $modal-max-width-xs: 600px;
 $modal-max-width-lg: 800px;
 $modal-gutter-size: calc(2% + #{$gutter-sm});
 $modal-button-basis: 200px;
-
-// Button Colors
-$button-hover-color: white;
-$button-hover-background-color: #286090;
-$button-hover-background-border: #284990;
-$button-active-color: white;
-$button-active-background-color: #3276b1;
-$button-active-background-border: #285e8e;
-$button-hover-disabled: black;
 
 // Dropdowns
 $dropdown-input-md-width: 120px;
