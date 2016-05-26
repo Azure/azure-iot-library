@@ -1,0 +1,50 @@
+// Button Colors
+$btn-default-background:        #FFFFFF;
+$btn-default-border:            #D6D6D6;
+$btn-default-text:              #000000;
+
+$btn-default-hover-background:  #E6E6E6;
+$btn-default-hover-border:      #ADADAD;
+$btn-default-hover-text:        #000000;
+
+$btn-selected-background:       #337AB7;
+$btn-selected-border:           #3073AD;
+$btn-selected-text:             #FFFFFF;
+
+$btn-selected-hover-background: #286090;
+$btn-selected-hover-border:     #204D74;
+$btn-selected-hover-text:       #FFFFFF;
+
+// DEPRECATED: STOP USING THESE
+$button-hover-color: white;
+$button-hover-background-color: #286090;
+$button-hover-background-border: #284990;
+$button-hover-disabled: black;
+$button-active-color: white;
+$button-active-background-color: #3276b1;
+$button-active-background-border: #285e8e;
+
+// Button overrides
+.btn.btn-default {
+    background-color: $btn-default-background;
+    color: $btn-default-text;
+    border-color: $btn-default-border;
+    
+    &:hover:not(.disabled):not([disabled]) {
+        background-color: $btn-default-hover-background;
+        color: $btn-default-hover-text;
+        border-color: $btn-default-hover-border;
+    }
+}
+
+.btn.btn-primary, .btn.btn-default.active {
+    background-color: $btn-selected-background;
+    color: $btn-selected-text;
+    border-color: $btn-selected-border;
+    
+    &:hover:not(.disabled):not([disabled]) {
+        background-color: $btn-selected-hover-background;
+        color: $btn-selected-hover-text;
+        border-color: $btn-selected-hover-border;
+    }
+}
