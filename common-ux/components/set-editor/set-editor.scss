@@ -1,6 +1,6 @@
 @import "common-theme";
 
-@media only screen and (max-width :$breakpoint-sm) {
+@media only screen and (max-width: $breakpoint-sm - 1) {
     button {
         margin: $gutter-xs 0 $gutter-xs 0;       
     }
@@ -11,13 +11,13 @@
     }
 }
 
-@media only screen and (min-width :$breakpoint-sm) {
+@media only screen and (min-width: $breakpoint-sm) {
     .small-form-factor {
         display: none;
     }    
 }
 
-@media only screen and (max-width :$breakpoint-sm) {
+@media only screen and (max-width: $breakpoint-sm - 1) {
     .large-form-factor {
         display: none;
     }    
