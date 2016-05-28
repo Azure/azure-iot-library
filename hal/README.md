@@ -17,14 +17,14 @@ Clone and run `npm install`.
 #### `@provides(ns, [options])`
 Associates a HAL namespace and documentation with this server class. It can be used multiple times; the first namespace provided will be treated as the default namespace for any non-namespaced rels used within this server.
 * `ns` [string]: The namespace's name.
-* `options` [provides.Options.Namespace] (optional):
+* `options` [provides.Options.Namespace] *(optional)*:
     * `href` [string]: The documentation link representing this namespace; this contains the placeholder 'rel' for the rels provided by the routes of this server, as per the HAL spec. It can accept either URI-template or Express syntax, though the latter is required for automated documentation. Default is '/docs/&lt;namespace&gt;/:rel'.
     * `auto` [boolean]: Indicates whether to automatically generate documentation from the `description` attributes, described below; default is false if `href` is specified, true otherwise.
 
 #### `@middleware(handler, [options])`
 Indicates Express-style middleware to use with this server; it can be used multiple times to add more than one middleware function per server.
 * `handler` [express.RequestHandler | express.ErrorRequestHandler]: The Express-style middleware function.
-* `options` [middleware.Options] (optional):
+* `options` [middleware.Options] *(optional)*:
     * `error` [boolean]: Indicates that this is error-handling middleware, meaning it is registered after the defined routes, rather than before; default is false.
 
 ### Method Decorators
@@ -37,7 +37,7 @@ Indicates that the following method provides an Express or HAL route handler.
 #### `@provides(rel, [options])`
 Indicates a rel this handler provides; it can be used multiple times, and omitting it will prevent HAL responses from automatically linking to this route's path.
 * `rel` [string | LinkRelation]: The rel this route provides; this is either a string specifying a custom rel (which will automatically be prepended with this server's namespace, e.g. 'ns:rel' in the example below) or an instance of the LinkRelation enum, specifying one of the standard, non-namespaced rels.
-* `options` [provides.Options.Rel] (optional):
+* `options` [provides.Options.Rel] *(optional)*:
     * `discoverable` [boolean]: Indicates whether this handler should be included in the discoverability API; default is false.
     * `params` [any]: URI parameters to explicitly force for this rel. This allows, for example, a route with an optional parameter to have a separate rel explicitly for when that parameter is empty.
     * `id` [string]: The name of the ID parameter. This will fill out the 'name' in any links to this rel from the corresponding entry in the params object.
@@ -54,7 +54,7 @@ Indicates that this method should return a HAL response; ommitting it will cause
     * Standard rels from the LinkRelation enum, which refer to this server.
     * Non-namespaced custom rels, which refer to the default namespace of this server.
     * Namespaced custom rels, which refer to another server or a non-default namespace of this server.
-* `options` [hal.Options] (optional):
+* `options` [hal.Options] *(optional)*:
     * `self` [boolean]: Indicates whether this HAL response should include the standard 'self' rel; default is true for GET routes, false otherwise.
 
 ### Interfaces
@@ -63,7 +63,7 @@ Indicates that this method should return a HAL response; ommitting it will cause
 The additional functionality added to the `express.Response` object by the `@hal` decorator. Calling the express `json` method will trigger the return of a HAL response. It provides the following methods:
 * `link(rel, [overrides])`: Dynamically adds a link to the response. As per the `@hal` decorator, it will automatically determine the href of the associated rel, populating it with the params of this request.
     * `rel` [string | LinkRelation]: The rel to add, as per the arguments to the `@hal` decorator.
-    * `overrides` [hal.Overrides] (optional): Allows you to override the default behavior for the following:
+    * `overrides` [hal.Overrides] *(optional)*: Allows you to override the default behavior for the following:
         * `rel` [string | LinkRelation]: The HAL response will include the link under this rel, though the href will still be populated automatically as normal.
         * `href` [string]: The HAL response will use the provided href for this rel, rather than the server-provided one.
         * `params` [any]: The href will be populated using this params object, rather than the one from the request.
@@ -75,7 +75,7 @@ The additional functionality added to the `express.Response` object by the `@hal
 * `embed(rel, value, [overrides])`: Dynamically adds an embedded value to the response.
     * `rel` [string | LinkRelation]: The rel under which to add the embedded value. The value will automatically be given a 'self' link in accordance with this rel, unless it is overridden.
     * `value` [Object]: The JSON object to embed.
-    * `overrides` [hal.Overrides] (optional): Allows you to override the default behavior of the rel, as described above.
+    * `overrides` [hal.Overrides] *(optional)*: Allows you to override the default behavior of the rel, as described above.
 * `docs(ns, href)`: Manually adds documentation CURIEs to the response. Normally, these are populated automatically from the associated servers of the included rels; however, if this response includes rels that are not provided by servers in this service, this can be used to include the CURIEs manually.
     * `ns` [string]: The namespace of this documentation.
     * `href` [string]: The documentation link representing this namespace; as per HAL.
