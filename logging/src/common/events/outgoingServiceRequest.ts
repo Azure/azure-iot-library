@@ -42,7 +42,10 @@ export class OutgoingServiceRequest extends ServiceRequest {
         public dependencyOperationName?: string,
         public dependencyOperationVersion?: string,
         public dependencyName?: string,
-        public dependencyType?: string
+        public dependencyType?: string,
+        public args?: any[],
+        public version?: string,
+        public context?: string
     ) {
         super(operationName,
             requestMethod,
@@ -55,6 +58,8 @@ export class OutgoingServiceRequest extends ServiceRequest {
             responseContentType,
             protocol,
             protocolStatusCode,
-            responseBody);
+            responseBody,
+            args,
+            version);
     }
 }
