@@ -2,7 +2,7 @@
 
 import {GridBody} from './grid.body';
 import {PerformanceSpy} from '../../performance-spy';
-import {Component, ChangeDetectionStrategy, ViewEncapsulation, ChangeDetectorRef, Input} from 'angular2/core';
+import {Component, ChangeDetectionStrategy, ViewEncapsulation, ChangeDetectorRef, Input} from '@angular/core';
 
 @Component({
     selector: 'grid-body-list',

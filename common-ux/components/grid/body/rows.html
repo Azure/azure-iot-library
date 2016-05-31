@@ -1,5 +1,5 @@
 <div class="grid-row"
-    *ngFor="#row of rows"
+    *ngFor="let row of rows"
     *ngForTrackBy="trackRows"
     (click)="selectRow(row)"
     (dblclick)="doubleClickRow(row)"
@@ -10,7 +10,7 @@
         <span class="glyphicon glyphicon-ok"></span>
     </div>
     <div class="grid-cell" 
-        *ngFor="#column of configuration.columns; #i = index"
+        *ngFor="let column of configuration.columns; let i = index"
         *ngForTrackBy="trackColumns"
         [spy-performance]="performanceSpyGroup + '-column-' + i"
         [spy-performance-enabled]="performanceSpyGroup !== null && performanceSpyEnabled"

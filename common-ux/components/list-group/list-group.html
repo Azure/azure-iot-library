@@ -1,6 +1,6 @@
 <div class="list-group">
     <a class="list-group-item"
-        *ngFor="#option of options"
+        *ngFor="let option of options"
         [ngClass]="{'active': selection.value[getId(option)]}"
         (click)="select(option)">
         {{getLabel(option)}}

@@ -1,6 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {Component, Input, Output, EventEmitter, ElementRef, NgZone, ViewEncapsulation, ViewChild} from 'angular2/core';
+import {Component, Input, Output, EventEmitter, ElementRef, NgZone, ViewEncapsulation, ViewChild} from '@angular/core';
 import {BehaviorSubject, Subscription} from 'rxjs/Rx';
 import {GlobalContext} from './globalContext';
 import {Dictionary} from './dictionary';

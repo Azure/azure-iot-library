@@ -1,6 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {Component, Input, Output, EventEmitter, ViewEncapsulation} from 'angular2/core';
+import {Component, Input, Output, EventEmitter, ViewEncapsulation} from '@angular/core';
 /**
  * This is a shared modal component, which is used in multiple views
  */
