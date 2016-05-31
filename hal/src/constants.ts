@@ -104,8 +104,12 @@ export namespace Hal {
         hreflang?: string;
     }
     
+    export type Links = { [rel: string]: Link | Link[] }
+    
+    export type Embedded = { [rel: string]: Resource | Resource[] }
+    
     export interface Resource {
-        _links?: { [rel: string]: Link | Link[] };
-        _embedded?: { [rel: string]: Resource | Resource[] };
+        _links?: Links;
+        _embedded?: Embedded;
     }
 }
