@@ -14,6 +14,8 @@ export abstract class ServiceRequest {
         public responseContentType?: string,
         public protocol?: string,
         public protocolStatusCode?: string,
-        public responseBody?: string) {
+        public responseBody?: string,
+        public args?: any[],
+        public version?: string) {
     }
 }
