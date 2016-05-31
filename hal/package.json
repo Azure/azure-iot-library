@@ -3,15 +3,12 @@
   "description": "Decorator library for HAL-based routes",
   "version": "1.0.0-rc.2",
   "scripts": {
-    "postinstall": "tsd install",
     "prebuild": "npm run lint",
     "build": "tsc",
     "pretest": "npm run build",
     "test": "istanbul cover --include-all-sources -x **/*.spec.* node_modules/jasmine-node/lib/jasmine-node/cli.js .",
     "lint": "tslint ./src/**/*.ts",
-    "prepackage": "npm run build",
-    "package": "npm pack",
-    "prepublish": "npm run build"
+    "prepublish": "tsd install && npm run build"
   },
   "license": "SEE LICENSE IN ./license.txt",
   "devDependencies": {
