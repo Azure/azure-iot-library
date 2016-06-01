@@ -1,6 +1,7 @@
 # 1.0.0-rc.5
 
 - (SEMVER-MAJOR) Updated to Angular2 RC
+- (SEMVER-PATCH) Omitting a polling function now removes the last updated label
 
 # 1.0.0-rc.4
 
