@@ -1,0 +1,16 @@
+# Modules
+/node_modules/
+/typings/
+
+# Unnecessary built files
+*.tgz
+*.js.map
+
+# Source files
+*.ts
+!*.d.ts
+lib.d.ts
+ts*.json
+
+# Test files
+*.spec.*

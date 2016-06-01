@@ -1,0 +1,10 @@
+# NodeJS
+node_modules/
+npm-debug.log
+tsd-debug.log
+
+# Build results
+typings/
+*.js
+*.js.map
+*.d.ts
