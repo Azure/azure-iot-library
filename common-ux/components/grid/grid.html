@@ -1,5 +1,5 @@
-<div class="status">
-    <span *ngIf="poll">{{Resources.LabelPoll || DefaultResources.LabelPoll}}: <input type="checkbox" (change)="poll(!poll())" [checked]="poll()"></span> {{Resources.LabelLastUpdated || DefaultResources.LabelLastUpdated}}: {{lastUpdated.toLocaleTimeString()}}
+<div class="status" *ngIf="poll">
+    <span>{{Resources.LabelPoll || DefaultResources.LabelPoll}}: <input type="checkbox" (change)="poll(!poll())" [checked]="poll()"></span> {{Resources.LabelLastUpdated || DefaultResources.LabelLastUpdated}}: {{lastUpdated.toLocaleTimeString()}}
 </div>
 <div class="grid"
     [ngClass]="classMap" 
