@@ -24,7 +24,7 @@ module.exports = function (config) {
             'node_modules/zone.js/dist/zone.js',
             'dest/**/*.spec.js',
             { pattern: 'dest/**/!(*.spec).js', included: false },
-            { pattern: 'node_modules/angular2/**/*.js', included: false },
+            { pattern: 'node_modules/@angular/**/*.js', included: false },
             { pattern: 'node_modules/rxjs/**/*.js', included: false },
         ],
         
@@ -50,7 +50,11 @@ module.exports = function (config) {
             suppressSkipped: false,  // do not print information about skipped tests
             showSpecTiming: true // print the time elapsed for each spec
         },
-        
+                
+        // level of logging
+        // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
+        // logLevel: config.LOG_INFO,
+         
         // web server port
         port: 9876,
 
@@ -77,12 +81,13 @@ module.exports = function (config) {
         systemjs: {
             config: {
                 map: {
-                    angular2: 'node_modules/angular2',
+                    '@angular': 'node_modules/@angular',
                     rxjs: 'node_modules/rxjs',
                     crypto: '@empty',
                 },
                 packages: {
-                    'angular2': {
+                    '@angular/core': {
+                        main: 'index.js',
                         defaultExtension: 'js'
                     },
                     'rxjs': {

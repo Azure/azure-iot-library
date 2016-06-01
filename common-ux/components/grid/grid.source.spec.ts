@@ -8,7 +8,7 @@ import {
   it,
   inject,
   injectAsync
-} from 'angular2/testing';
+} from '@angular/core/testing';
 
 import {BehaviorSubject} from 'rxjs/Rx';
 
@@ -58,14 +58,14 @@ describe('Common Grid Source:', () => {
     });
 
     it('Constructs', () => {
-        expect(grid).toBeAnInstanceOf(GridSource);
+        expect(grid).toBeDefined();
     });
     
     it('Opens a view', () => {
         grid.update = jasmine.createSpy('update');
         
         var view = grid.open();
-        expect(view).toBeAnInstanceOf(GridSourceView);
+        expect(view).toBeDefined();
         expect(grid.update).toHaveBeenCalled();
         expect(grid.openViews).toEqual([view]);
     });
@@ -74,7 +74,7 @@ describe('Common Grid Source:', () => {
         grid.update = jasmine.createSpy('update');
         
         var view = grid.open();
-        expect(view).toBeAnInstanceOf(GridSourceView);
+        expect(view).toBeDefined();
         expect(grid.update).toHaveBeenCalled();
         expect(grid.openViews).toEqual([view]);
         
@@ -86,14 +86,14 @@ describe('Common Grid Source:', () => {
         grid.update = jasmine.createSpy('update');
         
         var view = grid.open();
-        expect(view).toBeAnInstanceOf(GridSourceView);
+        expect(view).toBeDefined();
         expect(grid.update).toHaveBeenCalled();
         expect(grid.openViews).toEqual([view]);
         
         grid.openViews = [null, view];
         
         var view2 = grid.open();
-        expect(view2).toBeAnInstanceOf(GridSourceView);
+        expect(view2).toBeDefined();
         expect(grid.update).toHaveBeenCalled();
         expect(grid.openViews).toEqual([view2, view]);
     });

@@ -1,6 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {ViewEncapsulation, ChangeDetectionStrategy, EventEmitter, ChangeDetectorRef, SimpleChange} from 'angular2/core';
+import {ViewEncapsulation, ChangeDetectionStrategy, EventEmitter, ChangeDetectorRef, SimpleChange} from '@angular/core';
 import {GridConfiguration, SelectionStyle} from '../grid.configuration';
 import {BehaviorSubject, Subscription} from 'rxjs/Rx';
 import {GlobalContext} from '../../globalContext';

@@ -5,7 +5,7 @@
  * It is heavily inspired by https://angular.io/docs/ts/latest/guide/lifecycle-hooks.html#!#docheck
  * This directive should be used for debugging, and not ship with published code
  */
-import {Directive, Input, OnInit, AfterViewInit, DoCheck, AfterViewChecked, OnDestroy} from 'angular2/core';
+import {Directive, Input, OnInit, AfterViewInit, DoCheck, AfterViewChecked, OnDestroy} from '@angular/core';
 
 class PerformanceMeasurement {
     public average: number = 0;

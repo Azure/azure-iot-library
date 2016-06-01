@@ -8,7 +8,7 @@ import {
   it,
   inject,
   injectAsync
-} from 'angular2/testing';
+} from '@angular/core/testing';
 
 import {BehaviorSubject} from 'rxjs/Rx';
 

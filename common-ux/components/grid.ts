@@ -1,6 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {Component, Input, Output, EventEmitter, ElementRef, NgZone, ViewEncapsulation, ViewChild} from 'angular2/core';
+import {Component, Input, Output, EventEmitter, ElementRef, NgZone, ViewEncapsulation, ViewChild} from '@angular/core';
 import {IGridSourceFilter, GridSource, GridSourceView, ArrayGridSource} from './grid/grid.source';
 import {GridConfiguration, SelectionStyle} from './grid/grid.configuration';
 import {PerformanceSpy} from './performance-spy';
