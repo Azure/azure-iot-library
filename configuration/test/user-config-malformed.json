@@ -1,0 +1,5 @@
+{
+    "CONN_STR": "conn-str-value",
+    "MONGO_URI": "mongodb://localhost:27017/test",
+    FRUIT_OBJECT": { "fruit": ["apple", "banana"] }
+}

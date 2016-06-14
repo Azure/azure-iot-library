@@ -1,0 +1,41 @@
+{
+  "name": "@azure-iot/configuration",
+  "version": "1.0.0-rc.1",
+  "description": "Configuration support for Azure IoT microservices",
+  "main": "configuration.js",
+  "typings": "configuration.d.js",
+  "engines": {
+      "node": ">=6.1.0"
+  },
+  "author": "",
+  "dependencies": {
+    "mongodb": "^2.1.18"
+  },
+  "devDependencies": {
+    "rimraf": "^2.5.2",
+    "tsd": "^0.6.5",
+    "tslint": "^3.9.0",
+    "typescript": "^1.8.0",
+    "gulp": "^3.9.1",
+    "gulp-istanbul": "^1.0.0",
+    "gulp-jasmine": "^2.3.0",
+    "gulp-typescript": "^2.13.6",
+    "remap-istanbul": "^0.6.4",
+    "opener": "^1.4.1"
+  },
+  "scripts": {
+    "lint": "tslint *.ts",
+    "build": "gulp build",
+    "prebuild": "npm run lint",
+    "prepublish": "tsd install && npm run build",
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Azure/azure-iot-library.git"
+  },
+  "license": "SEE LICENSE IN ./license.txt",
+  "directories": {
+    "lib": "./src"
+  }
+}
