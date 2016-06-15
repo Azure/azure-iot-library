@@ -6,10 +6,9 @@ var gulp = require("gulp"),
     istanbul = require("gulp-istanbul"),
     opener = require("opener"),
     remap = require("remap-istanbul/lib/gulpRemapIstanbul"),
-    build = require("./build.js"),
     config = require("./config.js").config;
 
-gulp.task("pre-test", build, () => {
+gulp.task("pre-test", () => {
     return gulp.src([`${config.cleanDir}/*.js`, `!${config.cleanDir}/*.spec.js`])
         .pipe(istanbul())
         .pipe(istanbul.hookRequire());

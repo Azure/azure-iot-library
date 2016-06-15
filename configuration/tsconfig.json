@@ -10,10 +10,12 @@
         "removeComments": false,
         "noImplicitAny": false,
         "forceConsistentCasingInFileNames": true,
-        "rootDir": "./"
+        "rootDir": "./src",
+        "outDir": "./dist"
     },
     "exclude": [
         "node_modules",
-        "typings"
+        "typings",
+        "dist"
     ]
 }
