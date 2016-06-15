@@ -1,9 +1,9 @@
 {
   "name": "@azure-iot/configuration",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Configuration support for Azure IoT microservices",
-  "main": "configuration.js",
-  "typings": "configuration.d.js",
+  "main": "./dist/configuration.js",
+  "typings": "./dist/configuration.d.ts",
   "engines": {
       "node": ">=6.1.0"
   },
@@ -25,10 +25,10 @@
   },
   "scripts": {
     "lint": "tslint *.ts",
-    "build": "gulp build",
+    "build": "tsc",
     "prebuild": "npm run lint",
     "prepublish": "tsd install && npm run build",
-    "test": "gulp test"
+    "test": "npm run build && gulp test"
   },
   "repository": {
     "type": "git",
