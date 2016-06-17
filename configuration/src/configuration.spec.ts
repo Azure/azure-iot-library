@@ -110,9 +110,12 @@ describe("Configuration provider", () => {
             callback(null, databaseStub);
         });
 
-        const requiredKeys: string[] = ["ENV_KEY_1", "MONGO_KEY_1"];
-
-        await config.initialize(defaultKeys, requiredKeys, configFilename);
+        const initializeParams = {
+            defaultValues: defaultKeys,
+            requiredKeys: ["ENV_KEY_1", "MONGO_KEY_1"],
+            configFilename: configFilename
+        }
+        await config.initialize(initializeParams);
     }().then(done, done.fail));
 
     it("should return correctly set values", () => {
@@ -150,7 +153,6 @@ describe("Configuration provider", () => {
 
 describe("Configuration provider with no Mongo URI", () => {
     let configFilename: string;
-    let requiredKeys: string[];
 
     beforeEach( () => {
         // Silence console.log with spy
@@ -160,15 +162,20 @@ describe("Configuration provider with no Mongo URI", () => {
     });
 
     it("should log the lack of URI", done => async function() {
-        requiredKeys = [];
-        await config.initialize({}, requiredKeys, configFilename);
+        const initializeParams = {
+            configFilename: configFilename
+        }
+        await config.initialize(initializeParams);
         expect(console.log).toHaveBeenCalled();
     }().then(done, done.fail));
 
     it("should throw if there are unsatisfied required keys", done => async function() {
-        requiredKeys = ["REQUIRED_KEY"];
+        const initializeParams = {
+            requiredKeys: ["REQUIRED_KEY"],
+            configFilename: configFilename
+        }
         try {
-            await config.initialize({}, requiredKeys, configFilename);
+            await config.initialize(initializeParams);
             done.fail();
         } catch (err) {
             done()

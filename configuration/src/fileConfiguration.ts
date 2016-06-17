@@ -21,6 +21,7 @@ export class FileConfiguration implements IConfiguration {
      * configuration preferences.
      */
     public async initialize(configFilename: string): Promise<void> {
+        // Check for file existence
         try {
             await this.checkFileExistence(configFilename);
         } catch (err) {
@@ -28,6 +29,7 @@ export class FileConfiguration implements IConfiguration {
             return;
         }
 
+        // Attempt to read file
         let fileConfigPromise = new Promise<string>( (resolve, reject) => {
             readFile(configFilename, "utf8", (err, result) => {
                 if (err) {

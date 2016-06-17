@@ -62,7 +62,7 @@ let missingValue = config.get(["KEY", "vegetables"]);
 ```
 
 ## Initializing `config`
-The `config` singleton takes several optional arguments in the asynchronous `initialize` call, including:
+The `config` singleton takes a single, optional `ConfigOptions` argument to its asynchronous `initialize` call. The `ConfigOptions` object contains a number of options, including:
 
 - `defaultValues`: an object of key-value pairs which serve as default values---_i.e._ `defaultValues` is consulted if all other providers return `undefined`; defaults to an empty array
 - `requiredKeys`: an array of variable names which must be assigned a value before returning from the initialization; defaults to an empty array
@@ -145,7 +145,10 @@ async function example(): Promise<void> {
     // Asynchronously initialize the config service
     // with default values; won't return from initializing
     // until REQUIRED_KEY has a value
-    await config.initialize(["REQUIRED_KEY"], defaultValues);
+    await config.initialize({
+        requiredKeys: ["REQUIRED_KEY"],
+        defaultValues: defaultValues
+    });
 
     // Get values from the config instance
     let soup = config.getString("soup");
@@ -197,7 +200,7 @@ _Setting a source._ Choosing the database, collection, and document to source fo
 - Collection: optional parameter to `config.initialize` method; defaults to `config`
 - Document: currently, the chosen collection must contain only a single document
 
-_Waiting for variables._ Let's say another microservice is inserting variables into the Mongo DB in parallel to the calling of `config.initialize`. By specifying the `requiredKeys` argument to `config.initialize`, the method will wait until all of the keys in `requiredKeys` have been found by _any_ provider. For example, to wait for the `SERVICES` key to appear in the `mongo` provider (and assuming there is no `SERVICES` key in either the `file` or `env` providers), you would initialize config with `config.initialize(["SERVICES"])`.
+_Waiting for variables._ Let's say another microservice is inserting variables into the Mongo DB in parallel to the calling of `config.initialize`. By specifying the `requiredKeys` argument to `config.initialize`, the method will wait until all of the keys in `requiredKeys` have been found by _any_ provider. For example, to wait for the `SERVICES` key to appear in the `mongo` provider (and assuming there is no `SERVICES` key in either the `file` or `env` providers), you would initialize config with `config.initialize({requiredKeys: ["SERVICES"]})`.
 
 _Shallow reads._ Because `get` and `getString` are synchronous methods, reads to the `mongo` provider are necessarily shallow reads. To ensure that the provider has values for certain keys before returning from initialization, utilize the `requiredKeys` parameter to `config.initialize`.
 
