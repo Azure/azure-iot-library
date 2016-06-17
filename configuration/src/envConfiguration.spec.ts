@@ -24,7 +24,8 @@ describe("Environment configuration provider", () => {
         envKeys = {
             CONN_STR: "iot-hub-conn-str-val",
             MONGO_URI: "mongodb://localhost:27017/test",
-            STRINGIFIED_FRUITS: `{"fruits":["apple","banana"]}`
+            STRINGIFIED_FRUITS: `{"fruits":["apple","banana"]}`,
+            NESTED_OBJECT: `{"fruits":{"apples":{"gala":41,"jonagold":42,"honeycrisp":"43"}}}`
         };
         fruitsObject = {
             fruits: ["apple", "banana"]
@@ -47,16 +48,23 @@ describe("Environment configuration provider", () => {
         expect(envConfig.getString("MONGO_URI")).toEqual(envKeys["MONGO_URI"]);
         expect(envConfig.get<{ [key: string]: string[] }>("STRINGIFIED_FRUITS"))
             .toEqual(fruitsObject);
+        expect(envConfig.get(["NESTED_OBJECT", "fruits", "apples", "gala"])).toEqual(41);
+        expect(envConfig.getString(["NESTED_OBJECT", "fruits", "apples", "honeycrisp"]))
+            .toEqual("43");
     });
 
     it("returns undefined for unset keys", () => {
         expect(envConfig.getString(keysNotInEnv[0])).toBeUndefined();
         expect(envConfig.get(keysNotInEnv[1])).toBeUndefined();
+        expect(envConfig.get(["NESTED_OBJECT", "fruits", "bananas"])).toBeUndefined();
     });
 
     it("throws an error when using get<T> for a string", () => {
         expect( () => envConfig.get("CONN_STR") ).toThrow();
         expect( () => envConfig.get("MONGO_URI") ).toThrow();
         expect( () => envConfig.get("STRINGIFIED_FRUITS") ).not.toThrow();
+        expect( () => envConfig.getString("NESTED_OBJECT") ).not.toThrow();
+        expect( () => envConfig.get(["NESTED_OBJECT", "fruits"]) ).not.toThrow();
+        expect( () => envConfig.getString(["NESTED_OBJECT", "fruits"]) ).toThrow();
     });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@azure-iot/configuration",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Configuration support for Azure IoT microservices",
   "main": "./dist/configuration.js",
   "typings": "./dist/configuration.d.ts",

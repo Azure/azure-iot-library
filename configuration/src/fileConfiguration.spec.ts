@@ -29,7 +29,14 @@ describe("File configuration provider", () => {
         fileKeys = {
             FILE_KEY_1: "file-val-1",
             FILE_KEY_2: "file-val-2",
-            FILE_FRUIT_OBJECT: { "fruit": ["apple", "banana"] }
+            FILE_FRUIT_OBJECT: { "fruit": ["apple", "banana"] },
+            NESTED_OBJECT: {
+                "apples": {
+                    "gala": 41,
+                    "jonagold": 42,
+                    "honeycrisp": "43"
+                }
+            }
         };
         keysNotInFile = ["NOT_PRESENT_1", "NOT_PRESENT_2"];
 
@@ -42,6 +49,8 @@ describe("File configuration provider", () => {
         expect(fileConfig.getString("FILE_KEY_2")).toEqual(fileKeys["FILE_KEY_2"]);
         expect(fileConfig.get<Object>("FILE_FRUIT_OBJECT"))
             .toEqual(fileKeys["FILE_FRUIT_OBJECT"]);
+        expect(fileConfig.get(["NESTED_OBJECT", "apples", "gala"]))
+            .toEqual(fileKeys["NESTED_OBJECT"]["apples"]["gala"]);
     });
 
     it("returns undefined for unset keys", () => {
@@ -49,12 +58,19 @@ describe("File configuration provider", () => {
         expect(fileConfig.getString(keysNotInFile[1])).toBeUndefined();
         expect(fileConfig.get(keysNotInFile[0])).toBeUndefined();
         expect(fileConfig.get(keysNotInFile[1])).toBeUndefined();
+        expect(fileConfig.get(["NESTED_OBJECT", "apples", "red delicious"])).toBeUndefined();
+        expect(fileConfig.get(["NESTED_OBJECT", "bananas"])).toBeUndefined();
+        expect(fileConfig.get(["NESTED_OBJECT", "cherries", "royal ann"])).toBeUndefined();
     });
 
     it("throws an error when using getString on a non-string type", () => {
         expect( () => fileConfig.get("FILE_KEY_1") ).not.toThrow();
         expect( () => fileConfig.get("FILE_KEY_2") ).not.toThrow();
         expect( () => fileConfig.getString("FILE_FRUIT_OBJECT") ).toThrow();
+        expect( () => fileConfig.  getString(["NESTED_OBJECT", "apples", "gala"]))
+            .toThrow();
+        expect(() => fileConfig.getString(["NESTED_OBJECT", "apples", "honeycrisp"]))
+            .not.toThrow();
     });
 });
 

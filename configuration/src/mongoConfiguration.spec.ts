@@ -35,7 +35,14 @@ describe("Mongo configuration provider", () => {
         mongoDocument = {
             KEY_1: "val_1",
             KEY_2: "val_2",
-            FRUIT_OBJECT: { "fruit": ["apple", "banana"] }
+            FRUIT_OBJECT: { "fruit": ["apple", "banana"] },
+            NESTED_OBJECT: {
+                "apples": {
+                    "gala": 41,
+                    "jonagold": 42,
+                    "honeycrisp": "43"
+                }
+            }
         };
         keysNotInMongo = ["NOT_PRESENT_1", "NOT_PRESENT_2"];
         defaultCollectionName = "config";
@@ -84,6 +91,8 @@ describe("Mongo configuration provider", () => {
         expect(mongoConfig.getString("KEY_2")).toEqual(mongoDocument["KEY_2"]);
         expect(mongoConfig.get<Object>("FRUIT_OBJECT"))
             .toEqual(mongoDocument["FRUIT_OBJECT"]);
+        expect(mongoConfig.get(["NESTED_OBJECT", "apples", "gala"]))
+            .toEqual(mongoDocument["NESTED_OBJECT"]["apples"]["gala"]);
     });
 
     it("returns undefined for unset keys", () => {
@@ -91,12 +100,19 @@ describe("Mongo configuration provider", () => {
         expect(mongoConfig.getString(keysNotInMongo[1])).toBeUndefined();
         expect(mongoConfig.get(keysNotInMongo[0])).toBeUndefined();
         expect(mongoConfig.get(keysNotInMongo[1])).toBeUndefined();
+        expect(mongoConfig.get(["NESTED_OBJECT", "apples", "red delicious"])).toBeUndefined();
+        expect(mongoConfig.get(["NESTED_OBJECT", "bananas"])).toBeUndefined();
+        expect(mongoConfig.get(["NESTED_OBJECT", "cherries", "royal ann"])).toBeUndefined();
     });
 
     it("throws an error when using getString on a non-string type", () => {
         expect( () => mongoConfig.get("KEY_1") ).not.toThrow();
         expect( () => mongoConfig.get("KEY_2") ).not.toThrow();
         expect( () => mongoConfig.getString("FRUIT_OBJECT") ).toThrow();
+        expect( () => mongoConfig.  getString(["NESTED_OBJECT", "apples", "gala"]))
+            .toThrow();
+        expect(() => mongoConfig.getString(["NESTED_OBJECT", "apples", "honeycrisp"]))
+            .not.toThrow();
     });
 
     it("sets values correctly", done => async function() {

@@ -4,6 +4,7 @@ import {IConfiguration} from "./IConfiguration";
 import {FileConfiguration} from "./fileConfiguration";
 import {EnvConfiguration} from "./envConfiguration";
 import {MongoConfiguration} from "./mongoConfiguration";
+import {DefaultConfiguration} from "./defaultConfiguration";
 
 const defaultSecondsToRetry: number = 5 * 60;
 const mongoUriKey: string = "MONGO_URI";
@@ -20,16 +21,19 @@ export class Configuration implements IConfiguration {
      * Configuration providers include, in order of preference:
      *      - JSON file of user preference key-value pairs stored
      *        by default in ./user-config.json
-     *      - Environment variables
-     *      - A MongoDB document
+     *      - environment variables
+     *      - a MongoDB document
+     *      - the defaultValues object
      *
      * Notes:
-     *      - The Mongo DB should be included in the `mongoUri` configuration
+     *      - The Mongo DB should be included in the MONGO_URI configuration
      *        variable.
      *      - The utilized Mongo collection (`config` by default) must
      *        contain only a single document.
-     *      - The `mongoUri` key must be given a value before initialization.
+     *      - The MONGO_URI key must be given a value _before_ initialization.
      *
+     * @param {object} defaultValues - Object of key-value pairs where
+     * the accompanying value is the default (fallback) for that key.
      * @param {string[]} requiredKeys - Keys required to be present in
      * the MongoDB collection.
      * @param {string} configFilename - Location of the configuration JSON file
@@ -41,18 +45,26 @@ export class Configuration implements IConfiguration {
      * allotted time.
      */
     public async initialize(
+            defaultValues: { [key: string]: any } = {},
             requiredKeys: string[] = [],
             configFilename: string = "user-config.json",
             collectionName: string = "config",
-            secondsToRetry: number = defaultSecondsToRetry): Promise<void> {
+            secondsToRetry: number = defaultSecondsToRetry
+            ): Promise<void> {
         let fileConfig = new FileConfiguration();
         let envConfig = new EnvConfiguration();
         let mongoConfig = new MongoConfiguration();
+        let defaultConfig = new DefaultConfiguration(defaultValues);
 
+        // Add initial providers
         await fileConfig.initialize(configFilename);
-        this.providers = [fileConfig, envConfig];
-
+        // Check defaultConfig for mongoUri, but then remove it from providers
+        // to preserve provider ordering
+        this.providers = [fileConfig, envConfig, defaultConfig];
         let mongoUri: string = this.getString(mongoUriKey);
+        this.providers.pop();
+
+        // Optionally add mongo provider
         requiredKeys = this.updatedRequiredKeys(requiredKeys);
         if (typeof mongoUri === "undefined") {
             console.log(noMongoUriMsg);
@@ -64,12 +76,25 @@ export class Configuration implements IConfiguration {
                     mongoUri, requiredKeys, collectionName, secondsToRetry);
             this.providers.push(mongoConfig);
         }
+
+        // Optionally add default provider
+        if (typeof defaultValues !== "undefined") {
+            this.providers.push(defaultConfig);
+        }
     }
 
     private updatedRequiredKeys(requiredKeys: string[]): string[] {
         let newKeys: string[] = [];
-        for (let key in requiredKeys) {
-            if (typeof this.get(key) === "undefined") {
+        for (let key of requiredKeys) {
+            let val: any;
+            // Try both get<T> and getString to see if the provider has any
+            // val for key
+            try {
+                val = this.get(key);
+            } catch (err) {
+                val = this.getString(key);
+            }
+            if (typeof val === "undefined") {
                 newKeys.push(key);
             }
         }
@@ -80,10 +105,10 @@ export class Configuration implements IConfiguration {
      * Get the value associated with the passed key from the ordered
      * configuration providers.
      *
-     * @param {string} key - Name of variable to get.
+     * @param {string | string[]} key - Name of the variable to get.
      * @return {T} Value of variable named by key.
      */
-    public get<T>(key: string): T {
+    public get<T>(key: string | string[]): T {
         for (let provider of this.providers) {
             let val: T = provider.get<T>(key);
             if (typeof val !== "undefined") {
@@ -97,10 +122,10 @@ export class Configuration implements IConfiguration {
      * Get the value associated with the passed key from the ordered
      * configuration providers.
      *
-     * @param {string} key - Name of the configuration variable.
+     * @param {string | string[]} key - Name of the variable to get.
      * @return {string} Value of the configuration variable named by key.
      */
-    public getString(key: string): string {
+    public getString(key: string | string[]): string {
         for (let provider of this.providers) {
             let val: string = provider.getString(key);
             if (typeof val !== "undefined") {
