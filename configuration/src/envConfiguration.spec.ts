@@ -60,8 +60,8 @@ describe("Environment configuration provider", () => {
     });
 
     it("throws an error when using get<T> for a string", () => {
-        expect( () => envConfig.get("CONN_STR") ).toThrow();
-        expect( () => envConfig.get("MONGO_URI") ).toThrow();
+        expect( () => envConfig.get("CONN_STR") ).not.toThrow();
+        expect( () => envConfig.get("MONGO_URI") ).not.toThrow();
         expect( () => envConfig.get("STRINGIFIED_FRUITS") ).not.toThrow();
         expect( () => envConfig.getString("NESTED_OBJECT") ).not.toThrow();
         expect( () => envConfig.get(["NESTED_OBJECT", "fruits"]) ).not.toThrow();

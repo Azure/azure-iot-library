@@ -7,6 +7,10 @@ import {MongoConfiguration} from "./mongoConfiguration";
 import {DefaultConfiguration} from "./defaultConfiguration";
 
 const mongoUriKey: string = "MONGO_URI";
+const mongoDbNameKey: string = "MONGO_CONFIG_DB";
+const mongoCollectionNameKey: string = "MONGO_CONFIG_COLLECTION";
+const defaultDbName: string = "config";
+const defaultCollectionName: string = "config";
 const requiredKeysErrMsg: string = "Not all required keys were found";
 const noMongoUriMsg: string =
     "No Mongo URI found - using environment variables or user-config file instead";
@@ -14,7 +18,6 @@ const defaultConfigOptions: ConfigOptions = {
     defaultValues: {},
     requiredKeys: [],
     configFilename: "./user-config.json",
-    collectionName: "config",
     secondsToRetry: 5 * 60
 };
 
@@ -27,8 +30,6 @@ const defaultConfigOptions: ConfigOptions = {
  * the MongoDB collection.
  * @param {string} configFilename - Location of the configuration JSON file
  * relative to the calling process's working directory.
- * @param {string} collectionName - MongoDB collection to use for
- * key-value storage.
  * @param {number} secondsToRetry - Time to wait for Mongo database to
  * come online and contain requiredKeys, throwing an error after the
  * allotted time.
@@ -37,7 +38,6 @@ export interface ConfigOptions {
     defaultValues?: { [key: string]: any };
     requiredKeys?: string[];
     configFilename?: string;
-    collectionName?: string;
     secondsToRetry?: number;
 }
 
@@ -57,9 +57,12 @@ export class Configuration implements IConfiguration {
      * Notes:
      *      - The Mongo DB should be included in the MONGO_URI configuration
      *        variable.
+     *      - Set the MONGO_CONFIG_DB and MONGO_CONFIG_COLLECTION configuration
+     *        variables (in the file, env, or default providers) to
+     *        choose which DB and collection to use for the mongo
+     *        provider.
      *      - The utilized Mongo collection (`config` by default) must
      *        contain only a single document.
-     *      - The MONGO_URI key must be given a value _before_ initialization.
      *
      * @param {ConfigOptions} params - Object of optional parameters. See
      * ConfigOptions for each parameter. Defaults to the empty object,
@@ -74,10 +77,13 @@ export class Configuration implements IConfiguration {
 
         // Add initial providers
         await fileConfig.initialize(params.configFilename);
-        // Check defaultConfig for mongoUri, but then remove it from providers
-        // to preserve provider ordering
+        // Check all providers, including defaultConfig, for mongo settings,
+        // but then remove it from providers to preserve provider ordering
         this.providers = [fileConfig, envConfig, defaultConfig];
-        let mongoUri: string = this.getString(mongoUriKey);
+        const mongoUri: string = this.getString(mongoUriKey);
+        const dbName: string = this.getString(mongoDbNameKey) || defaultDbName;
+        const collectionName: string =
+                this.getString(mongoCollectionNameKey) || defaultCollectionName;
         this.providers.pop();
 
         // Optionally add mongo provider
@@ -88,8 +94,13 @@ export class Configuration implements IConfiguration {
                 throw new Error(`${requiredKeysErrMsg}: ${requiredKeys}`);
             }
         } else {
-            await mongoConfig.initialize(
-                    mongoUri, requiredKeys, params.collectionName, params.secondsToRetry);
+            await mongoConfig.initialize({
+                mongoUri: mongoUri,
+                dbName: dbName,
+                collectionName: collectionName,
+                requiredKeys: requiredKeys,
+                secondsToRetry: params.secondsToRetry
+            });
             this.providers.push(mongoConfig);
         }
 
@@ -100,7 +111,7 @@ export class Configuration implements IConfiguration {
     }
 
     private addDefaultParams(params: ConfigOptions): ConfigOptions {
-        let fullParams: ConfigOptions = {};
+        let fullParams: ConfigOptions = params;
         for (let key in defaultConfigOptions) {
             let val = (key in params) ? params[key] : defaultConfigOptions[key];
             fullParams[key] = val;
@@ -111,15 +122,7 @@ export class Configuration implements IConfiguration {
     private updatedRequiredKeys(requiredKeys: string[]): string[] {
         let newKeys: string[] = [];
         for (let key of requiredKeys) {
-            let val: any;
-            // Try both get<T> and getString to see if the provider has any
-            // val for key
-            try {
-                val = this.get(key);
-            } catch (err) {
-                val = this.getString(key);
-            }
-            if (typeof val === "undefined") {
+            if (typeof this.get(key) === "undefined") {
                 newKeys.push(key);
             }
         }
@@ -129,6 +132,13 @@ export class Configuration implements IConfiguration {
     /**
      * Get the value associated with the passed key from the ordered
      * configuration providers.
+     *
+     * Configuration providers include, in order of preference:
+     *      - JSON file of user preference key-value pairs stored
+     *        by default in ./user-config.json
+     *      - environment variables
+     *      - a MongoDB document
+     *      - the defaultValues object
      *
      * @param {string | string[]} key - Name of the variable to get.
      * @return {T} Value of variable named by key.
@@ -146,6 +156,13 @@ export class Configuration implements IConfiguration {
     /**
      * Get the value associated with the passed key from the ordered
      * configuration providers.
+     *
+     * Configuration providers include, in order of preference:
+     *      - JSON file of user preference key-value pairs stored
+     *        by default in ./user-config.json
+     *      - environment variables
+     *      - a MongoDB document
+     *      - the defaultValues object
      *
      * @param {string | string[]} key - Name of the variable to get.
      * @return {string} Value of the configuration variable named by key.

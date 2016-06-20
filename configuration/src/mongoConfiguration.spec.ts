@@ -77,9 +77,12 @@ describe("Mongo configuration provider", () => {
         });
 
         // Initialize mongoConfig instance
-        await mongoConfig.initialize(mongoUri);
+        await mongoConfig.initialize({
+            mongoUri: mongoUri
+        });
         // Expect the Mongo connection to be called with provided Mongo URI (and callback)
-        expect(MongoClient.connect).toHaveBeenCalledWith(mongoUri, jasmine.any(Function));
+        expect(MongoClient.connect)
+            .toHaveBeenCalledWith(`${mongoUri}/config`, jasmine.any(Function));
         // Expect to connect to the correct collection
         expect(collectionStub).toHaveBeenCalledWith(defaultCollectionName);
         // Expect the single document to have been gotten (and callback)
@@ -135,7 +138,11 @@ describe("Mongo configuration provider", () => {
         spyOn(mongoConfig, "get").and.returnValue(undefined);
         expect(mongoConfig.get).not.toHaveBeenCalled();
         try {
-            await mongoConfig.initialize(mongoUri, requiredKeys, "config", 3);
+            await mongoConfig.initialize({
+                mongoUri: mongoUri,
+                requiredKeys: requiredKeys,
+                secondsToRetry: 3
+            });
             done.fail();  // expect initialization to fail
         } catch (err) {
             expect(mongoConfig.get).toHaveBeenCalled();

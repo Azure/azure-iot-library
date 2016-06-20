@@ -20,7 +20,7 @@ This builds the project, putting the output into the base (`./dist`) folder.
 This library provides the main `Configuration` module, which exports the `config` singleton to create a dictionary-like interface of configuration values. Once initialized, `config` provides the `getString` and generic `get<T>` methods, described further below.
 
 ## Providers
-Configuration keys are mapped to values from one of four _providers_, in order of preference:
+Configuration keys are mapped to values from one of four optional _providers_, in order of preference:
 
 1. `file`: JSON file at `./user-config.json`
 2. `env`: environment variables
@@ -83,18 +83,20 @@ Let's say we have the following as our `./user-config.json` file:
                 "href": "bar.com",
             }
     },
-    "MONGO_URI": "mongodb://localhost:27017/example_database"
+    "MONGO_URI": "mongodb://localhost:27017",
+    "MONGO_CONFIG_DB": "config-db",
+    "MONGO_CONFIG_COLLECTION": "config-collection"
 }
 ```
 This means, _e.g._, `config.getString(["services", "service_1", "name"]) -> "foo"`.
 
 Now, to provision a `mongo` provider with `service_2`, we'll choose
 
-- database: `example_database` (set by the `MONGO_URI` in the above `user-config.json`)
-- collection: `config` (the default collection)
-- document: _N/A_ (`config` collection must contain only a single document)
+- database: `config-db` (set by the `MONGO_CONFIG_DB` in the above `user-config.json`)
+- collection: `config-collection` (set by the `MONGO_CONFIG_COLLECTION` in the above `user-config.json`)
+- document: _N/A_ (the collection must contain only a single document)
 
-Then, in the `example_database` database, set the `config` collection's single document to be:
+Then, in the `config-db` database, set the `config-collection` collection's single document to be:
 ```JSON
 {
     "SERVICES": {
@@ -118,7 +120,7 @@ config.initialize().then( () => {
     let serviceName_2 = config.getString(["SERVICES", "service_2", "name"]);
 
     // Now, we have:
-    // mongoUri = "mongodb://localhost:27017/example_database"
+    // mongoUri = "mongodb://localhost:27017"
     // servicesObject_1 = { "service_1": { "name": "foo", ... } }
     // service_2 = { "name": "soap", ... }
     // serviceName_2 = "soap"
@@ -191,13 +193,13 @@ The below sample JSON file demonstrates best practices for organizing configurat
 ```
 
 ### Setting `MONGO_URI`
-In order to utilize a `mongo` provider, the `MONGO_URI` configuration variable must be set by one of the other three providers. A good fallback is to set a default value for `MONGO_URI` in the `default` provider (passed as the `defaultValues` object to `config.initialize`).
+In order to utilize a `mongo` provider, the `MONGO_URI` configuration variable must be set by one of the other three providers. If no value is found for `MONGO_URI`, `config.initialize` will not attempt to connect to a Mongo DB. A good fallback is to set a default value for `MONGO_URI` in the `default` provider (passed as the `defaultValues` object to `config.initialize`).
 
 ### MongoDB notes
 _Setting a source._ Choosing the database, collection, and document to source for configuration variables is shown below.
 
-- Database: the DB to connect to should be included in the `MONGO_URI` configuration variable, _e.g._ `mongodb://localhost:27017/config_variables` connects to the `config_variables` DB on the localhost connection
-- Collection: optional parameter to `config.initialize` method; defaults to `config`
+- Database: utilized DB is pulled from the `MONGO_CONFIG_DB` configuration variable; defaults to `config`
+- Collection: the utilized collection is pulled from the `MONGO_CONFIG_COLLECTION` configuration variable; defaults to `config`
 - Document: currently, the chosen collection must contain only a single document
 
 _Waiting for variables._ Let's say another microservice is inserting variables into the Mongo DB in parallel to the calling of `config.initialize`. By specifying the `requiredKeys` argument to `config.initialize`, the method will wait until all of the keys in `requiredKeys` have been found by _any_ provider. For example, to wait for the `SERVICES` key to appear in the `mongo` provider (and assuming there is no `SERVICES` key in either the `file` or `env` providers), you would initialize config with `config.initialize({requiredKeys: ["SERVICES"]})`.
@@ -209,12 +211,22 @@ _Shallow reads._ Because `get` and `getString` are synchronous methods, reads to
 - `getString` returns all values as-is, and attempts to throw an error if the value is not a string
 
 ### Using providers directly
-Each provider can also be used independently of `Configuration`. Specifically, the `MongoConfiguration` class can be used to set values through to a Mongo DB directly, as shown in the snippet below:
+Each provider can also be used independently of `Configuration`. Specifically, the `MongoConfiguration` class can be used to set values through to a Mongo DB directly, as shown below:
 
 ```typescript
 import {MongoConfiguration} from "@azure-iot/configuration";
 
-let mongoConfig = new MongoConfiguration();
-await mongoConfig.initialize("mongodb://localhost:27017/test");
-await mongoConfig.set("fruitKey", {"fruits": ["apple", "banana"]});
+async function usingProviders() {
+    let mongoConfig = new MongoConfiguration();
+    await mongoConfig.initialize({
+        mongoUri: "mongodb://localhost:27017"
+    });
+    await mongoConfig.set("fruitKey", {"fruits": ["apple", "banana"]});
+}
+
+usingProviders().then(
+    // Now, the config collection of the config DB on the
+    // localhost connection should contain the fruitKey
+    // variable
+)
 ```

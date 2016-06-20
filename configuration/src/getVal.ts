@@ -1,6 +1,10 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
 export function getVal(keyArg: string | string[], configObject: { [key: string]: any }): any {
+    // Return early if config object can't be indexed into
+    if (configObject == null) {
+        return undefined;
+    }
     let val: any;
     // Flat return with single key
     if (typeof keyArg === "string") {
@@ -23,11 +27,19 @@ export function getVal(keyArg: string | string[], configObject: { [key: string]:
 export function getEnvVal(keyArg: string | string[], returnAsString: boolean): any {
     // Flat return with single key
     if (typeof keyArg === "string") {
-        const val: string = process.env[keyArg];
+        let val: string = process.env[keyArg];
         if (typeof val === "undefined") {
             return undefined;
         }
-        return returnAsString ? val : JSON.parse(val);
+        // Try to call JSON.parse, fall back to returning as-is
+        if (returnAsString === false) {
+            try {
+                val = JSON.parse(val);
+            } catch (err) {
+                // pass
+            }
+        }
+        return val;
     }
     // Nested return with array of keys
     else if (Array.isArray(keyArg)) {
