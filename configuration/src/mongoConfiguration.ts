@@ -5,7 +5,7 @@ import {IConfiguration} from "./IConfiguration";
 import {getVal} from "./getVal";
 
 const timeoutSeconds: number = 8;
-const connectionSuccessMsg: string = "Connected to config database";
+const connectionSuccessMsg: string = "Connected to configuration database";
 const requiredKeysErrMsg: string =
     "Configuration service cannot find the required keys";
 const defaultMongoOptions: MongoOptions = {
@@ -13,7 +13,8 @@ const defaultMongoOptions: MongoOptions = {
     dbName: "config",
     collectionName: "config",
     requiredKeys: [],
-    secondsToRetry: 5 * 60
+    secondsToRetry: 5 * 60,
+    logger: console.log
 }
 
 /*
@@ -27,6 +28,8 @@ const defaultMongoOptions: MongoOptions = {
  * @param {string[]} requiredKeys - Array of keys required to be contained
  * in the collectionName collection before completing initialization.
  * a connection and all requiredKeys before throwing an error.
+ * @param {function} logger - Optional logger function to call in place of
+ * console.log.
  */
 export interface MongoOptions {
     mongoUri: string;
@@ -34,13 +37,13 @@ export interface MongoOptions {
     collectionName?: string;
     requiredKeys?: string[];
     secondsToRetry?: number;
+    logger?: Function;
 }
 
 export class MongoConfiguration implements IConfiguration {
     private mongoConfig: { [key: string]: any } = {};
+    private params: MongoOptions;
     private mongoUri: string;
-    private db: Db;
-    private collection: Collection;
 
     /**
      * Asynchronously initialize configuration values from the passed
@@ -55,10 +58,9 @@ export class MongoConfiguration implements IConfiguration {
      * fills in with default values for other keys.
      */
     public async initialize(params: MongoOptions): Promise<void> {
-        this.mongoUri = params.mongoUri;
-        params = this.addDefaultParams(params);
-        await this.initializeDb(params);
-        console.log(connectionSuccessMsg);
+        this.params = this.addDefaultParams(params);
+        await this.initializeDb();
+        this.params.logger(connectionSuccessMsg);
     }
 
     private addDefaultParams(params: MongoOptions): MongoOptions {
@@ -70,30 +72,37 @@ export class MongoConfiguration implements IConfiguration {
         return fullParams;
     }
 
-    private async initializeDb(params: MongoOptions): Promise<void> {
+    private async initializeDb(): Promise<void> {
         while (true) {
+            let db: Db;
             try {
                 // Establish a connection
-                this.db = await new Promise<Db>( (resolve, reject) => {
-                    MongoClient.connect(`${this.mongoUri}/${params.dbName}`, (err, database) => {
+                db = await new Promise<Db>( (resolve, reject) => {
+                    const mongoUri: string = `${this.params.mongoUri}/${this.params.dbName}`;
+                    MongoClient.connect(mongoUri, (err, database) => {
                         err ? reject(err) : resolve(database);
                     });
                 });
                 // Set this.mongoConfig
-                this.collection = this.db.collection(params.collectionName);
+                const collection: Collection = db.collection(this.params.collectionName);
                 this.mongoConfig = await new Promise( (resolve, reject) => {
-                    this.collection.findOne({}, (err, doc) => {
+                    collection.findOne({}, (err, doc) => {
                         doc = doc || {};
                         err ? reject(err) : resolve(doc);
                     });
                 });
-                // Ensure this.mongoConfig contains the requiredKeys
-                this.requireKeys(params.requiredKeys);
+                // Ensure this.mongoConfig contains the requiredKeys, then
+                // close the connection
+                this.requireKeys(this.params.requiredKeys);
+                db.close();
                 return;
             } catch (err) {
                 // Wait before retrying connection
-                params.secondsToRetry -= timeoutSeconds;
-                if (params.secondsToRetry <= 0) {
+                this.params.secondsToRetry -= timeoutSeconds;
+                this.params.secondsToRetry = Math.max(this.params.secondsToRetry, 0);
+                this.params.logger(`Waiting for mongo provider - ${this.params.secondsToRetry} seconds left`);
+                if (this.params.secondsToRetry <= 0) {
+                    db.close();
                     throw err;
                 }
                 await new Promise( (resolve, reject) => {
@@ -107,7 +116,7 @@ export class MongoConfiguration implements IConfiguration {
         let val: any;
         for (let key of requiredKeys) {
             val = this.get(key);
-            if (typeof val === "undefined") {
+            if (val === null) {
                 throw new Error(requiredKeysErrMsg);
             }
         }
@@ -116,14 +125,15 @@ export class MongoConfiguration implements IConfiguration {
     /**
      * Get the value associated with the passed key.
      *
-     * Throw an error if the keyed value type is not a string.
+     * Return null if no value is set. Throw an error if the
+     * keyed value type is not a string.
      *
      * @param {string | string[]} key - Name of the variable to get.
      * @return {string} Value of variable named by key.
      */
     public getString(key: string | string[]): string {
         let val: any = getVal(key, this.mongoConfig);
-        if (typeof val !== "string" && typeof val !== "undefined") {
+        if (typeof val !== "string" && val !== null) {
             throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
         }
@@ -132,6 +142,8 @@ export class MongoConfiguration implements IConfiguration {
 
     /**
      * Get the value associated with the passed key.
+     *
+     * Return null if no value is set.
      *
      * @param {string} key - Name of variable to get.
      * @return {T} Value of variable named by key.
@@ -148,12 +160,24 @@ export class MongoConfiguration implements IConfiguration {
      * @return {any} Value of variable named by key.
      */
     public async set(key: string, value: any): Promise<void> {
+        // Set update objects
         let query = {};
         let update = {};
         query[key] = {$exists: true};
         update[key] = value;
 
-        await this.collection.updateOne({}, {$set: update}, {upsert: true});
+        // Establish a connection
+        const db: Db = await new Promise<Db>( (resolve, reject) => {
+            const mongoUri: string = `${this.params.mongoUri}/${this.params.dbName}`;
+            MongoClient.connect(mongoUri, (err, database) => {
+                err ? reject(err) : resolve(database);
+            });
+        });
+        this.params.logger(connectionSuccessMsg);
+        // Update key-value pair
+        const collection: Collection = db.collection(this.params.collectionName);
+        await collection.updateOne({}, {$set: update}, {upsert: true});
         this.mongoConfig[key] = value;
+        db.close();
     }
 }

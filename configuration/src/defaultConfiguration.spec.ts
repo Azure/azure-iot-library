@@ -8,7 +8,7 @@ import {DefaultConfiguration} from "./defaultConfiguration";
  * Before each spec set the defaultironment variables appropriately.
  * Specs test:
  *      - returned value is correct value and type
- *      - unset key returns undefined
+ *      - unset key returns null
  *      - errors thrown for incorrect usage of getString vs get<T>
  */
 describe("Defaultironment configuration provider", () => {
@@ -37,9 +37,9 @@ describe("Defaultironment configuration provider", () => {
             .toEqual(defaultKeys["DEFAULT_FRUIT_OBJECT"]);
     });
 
-    it("returns undefined for unset keys", () => {
-        expect(defaultConfig.getString(keysNotInDefault[0])).toBeUndefined();
-        expect(defaultConfig.get(keysNotInDefault[1])).toBeUndefined();
+    it("returns null for unset keys", () => {
+        expect(defaultConfig.getString(keysNotInDefault[0])).toEqual(null);
+        expect(defaultConfig.get(keysNotInDefault[1])).toEqual(null);
     });
 
     it("throws an error when using get<T> for a string", () => {

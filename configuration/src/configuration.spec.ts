@@ -5,7 +5,7 @@
  *
  * Specs test:
  *      - returned value is correct value and type
- *      - unset keys return undefined
+ *      - unset keys return null
  *      - providers are consulted in the correct order
  *        (file, env, mongo, then default)
  */
@@ -31,8 +31,8 @@ describe("Configuration provider", () => {
     let updateOneStub;
 
     beforeEach( done => async function() {
-        // Silence console.log with spy
         spyOn(console, "log");
+
         // Prevent state leakage between specs
         configFilename = `${__dirname}/../test/user-config-test.json`;
         fileKeys = {
@@ -95,28 +95,33 @@ describe("Configuration provider", () => {
                 const value = update[key];
                 mongoKeys[key] = value;
             });
-        collectionStub = jasmine.createSpy("collection")
-            .and.callFake( _ => {
-                // Return the stubbed colleciton object
-                return {
-                    "findOne": findOneStub,
-                    "updateOne": updateOneStub
-                };
-            });
+        collectionStub = jasmine.createSpy("collection").and.returnValue({
+                "findOne": findOneStub,
+                "updateOne": updateOneStub
+        });
         // Spy on MongoClient's connect method by allowing the ability
         // to get a stubbed collection object from db.collection(collectionName)
         spyOn(MongoClient, "connect").and.callFake( (_, callback) => {
-            const databaseStub = { collection: collectionStub };
+            const databaseStub = {
+                collection: collectionStub,
+                close: () => {}
+            };
             callback(null, databaseStub);
         });
 
         const initializeParams = {
             defaultValues: defaultKeys,
             requiredKeys: ["ENV_KEY_1", "MONGO_KEY_1"],
-            configFilename: configFilename
+            configFilename: configFilename,
+            logger: () => {}  // silence logs
         }
         await config.initialize(initializeParams);
     }().then(done, done.fail));
+
+    afterEach( () => {
+        // Check that the logger param is used, not the global console.log
+        expect(console.log).not.toHaveBeenCalled();
+    });
 
     it("should return correctly set values", () => {
         expect(config.get("FILE_FRUIT_OBJECT")).toEqual(fileKeys["FILE_FRUIT_OBJECT"]);
@@ -128,14 +133,14 @@ describe("Configuration provider", () => {
         expect(config.get(["NESTED_OBJECT", "apples"])).toEqual(fileKeys["NESTED_OBJECT"]["apples"]);
     });
 
-    it("should return undefined for unset values", () => {
-        expect(config.get(keysNotPresent[0])).toBeUndefined();
-        expect(config.get(keysNotPresent[1])).toBeUndefined();
-        expect(config.getString(keysNotPresent[0])).toBeUndefined();
-        expect(config.getString(keysNotPresent[1])).toBeUndefined();
-        expect(config.get(["NESTED_OBJECT", "apples", "red delicious"])).toBeUndefined();
-        expect(config.get(["NESTED_OBJECT", "bananas"])).toBeUndefined();
-        expect(config.get(["NESTED_OBJECT", "cherries", "royal ann"])).toBeUndefined();
+    it("should return null for unset values", () => {
+        expect(config.get(keysNotPresent[0])).toEqual(null);
+        expect(config.get(keysNotPresent[1])).toEqual(null);
+        expect(config.getString(keysNotPresent[0])).toEqual(null);
+        expect(config.getString(keysNotPresent[1])).toEqual(null);
+        expect(config.get(["NESTED_OBJECT", "apples", "red delicious"])).toEqual(null);
+        expect(config.get(["NESTED_OBJECT", "bananas"])).toEqual(null);
+        expect(config.get(["NESTED_OBJECT", "cherries", "royal ann"])).toEqual(null);
     });
 
     it("should enforce preference in provider order", () => {
@@ -155,24 +160,25 @@ describe("Configuration provider with no Mongo URI", () => {
     let configFilename: string;
 
     beforeEach( () => {
-        // Silence console.log with spy
-        spyOn(console, "log");
         // Prevent state leakage between specs
         configFilename = `${__dirname}/../test/user-config-no-uri.json`;
     });
 
     it("should log the lack of URI", done => async function() {
+        const logger = jasmine.createSpy("logger");
         const initializeParams = {
-            configFilename: configFilename
+            configFilename: configFilename,
+            logger: logger  // spy on log calls
         }
         await config.initialize(initializeParams);
-        expect(console.log).toHaveBeenCalled();
+        expect(logger).toHaveBeenCalled();
     }().then(done, done.fail));
 
     it("should throw if there are unsatisfied required keys", done => async function() {
         const initializeParams = {
             requiredKeys: ["REQUIRED_KEY"],
-            configFilename: configFilename
+            configFilename: configFilename,
+            logger: () => {}  // silence logs
         }
         try {
             await config.initialize(initializeParams);

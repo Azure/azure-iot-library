@@ -3,12 +3,13 @@
 export function getVal(keyArg: string | string[], configObject: { [key: string]: any }): any {
     // Return early if config object can't be indexed into
     if (configObject == null) {
-        return undefined;
+        return null;
     }
     let val: any;
     // Flat return with single key
     if (typeof keyArg === "string") {
         val = configObject[keyArg];
+        return val || null;
     }
     // Nested return with array of keys
     else if (Array.isArray(keyArg)) {
@@ -16,20 +17,22 @@ export function getVal(keyArg: string | string[], configObject: { [key: string]:
         // Walk down through config object's nested keys
         for (let key of keyArg) {
             val = val[key];
-            if (typeof val === "undefined") {
-                return undefined;
+            // If value is null or undefined, return null
+            if (val == null) {
+                return null;
             }
         }
+        return val || null;
     }
-    return val;
 }
 
 export function getEnvVal(keyArg: string | string[], returnAsString: boolean): any {
     // Flat return with single key
     if (typeof keyArg === "string") {
         let val: string = process.env[keyArg];
-        if (typeof val === "undefined") {
-            return undefined;
+        // If value is null or undefined, return null
+        if (val == null) {
+            return null;
         }
         // Try to call JSON.parse, fall back to returning as-is
         if (returnAsString === false) {
@@ -39,22 +42,24 @@ export function getEnvVal(keyArg: string | string[], returnAsString: boolean): a
                 // pass
             }
         }
-        return val;
+        return val || null;
     }
     // Nested return with array of keys
     else if (Array.isArray(keyArg)) {
         let val: any = process.env[keyArg[0]];
-        if (typeof val === "undefined") {
-            return undefined;
+        // If value is null or undefined, return null
+        if (val == null) {
+            return null;
         }
         val = JSON.parse(val);
         // Walk down through fileConfig's nested keys
         for (let key of keyArg.slice(1)) {
             val = val[key];
-            if (typeof val === "undefined") {
-                return undefined;
+            // If value is null or undefined, return null
+            if (val == null) {
+                return null;
             }
         }
-        return val;
+        return val || null;
     }
 }

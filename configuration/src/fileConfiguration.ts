@@ -20,12 +20,13 @@ export class FileConfiguration implements IConfiguration {
      * @param {string} configFilename - Name of the JSON file containing
      * configuration preferences.
      */
-    public async initialize(configFilename: string): Promise<void> {
+    public async initialize(configFilename: string, logger: Function = console.log): Promise<void> {
+        logger = logger || console.log;
         // Check for file existence
         try {
             await this.checkFileExistence(configFilename);
         } catch (err) {
-            console.log(fileNotFoundMsg);
+            logger(fileNotFoundMsg);
             return;
         }
 
@@ -35,7 +36,7 @@ export class FileConfiguration implements IConfiguration {
                 if (err) {
                     reject(err);
                 }
-                console.log(fileConsumedMsg);
+                logger(fileConsumedMsg);
                 resolve(result);
             });
         }).catch( (errMsg) => {
@@ -59,6 +60,8 @@ export class FileConfiguration implements IConfiguration {
     /**
      * Get the value associated with the passed key.
      *
+     * Returns null if no value is set.
+     *
      * Throw an error if the keyed value type is not a string.
      *
      * @param {string | string[]} key - Name of the variable to get.
@@ -66,7 +69,7 @@ export class FileConfiguration implements IConfiguration {
      */
     public getString(key: string | string[]): string {
         let val: any = getVal(key, this.fileConfig);
-        if (typeof val !== "string" && typeof val !== "undefined") {
+        if (typeof val !== "string" && val !== null) {
             throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
         }
@@ -75,6 +78,8 @@ export class FileConfiguration implements IConfiguration {
 
     /**
      * Get the value associated with the passed key.
+     *
+     * Returns null if no value is set.
      *
      * @param {string | string[]} key - Name of the variable to get.
      * @return {T} Value of variable named by key.

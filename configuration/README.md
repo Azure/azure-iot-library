@@ -22,12 +22,12 @@ This library provides the main `Configuration` module, which exports the `config
 ## Providers
 Configuration keys are mapped to values from one of four optional _providers_, in order of preference:
 
-1. `file`: JSON file at `./user-config.json`
-2. `env`: environment variables
-3. `mongo`: Mongo DB at the address of the `MONGO_URI` configuration variable
-4. `default`: default values passed as an optional argument to `config.initialize`
+- `file`: JSON file at `./user-config.json`
+- `env`: environment variables
+- `mongo`: Mongo DB at the address of the `MONGO_URI` configuration variable
+- `default`: default values passed as an optional argument to `config.initialize`
 
-For example, if both the `file` and `default` providers contained a value for the same key, the `file` provider would be authoritative.
+The first provider to return a value other than `null` is considered authoritative. For example, if both the `file` and `default` providers contained a value for the same key, the `file` provider would be authoritative.
 
 ## Setting variables
 Configuration variables only need to be set for one configuration provider. Variables can be set for each of the providers in the following ways:
@@ -46,6 +46,8 @@ The `config` singleton (and each provider) implements the `IConfiguration` inter
 - `get<T>(key)`: use when you expect the returned value to be anything other than a string; _e.g._ an object, array, etc.
 - `getString(key)`: use when you expect the returned value to be a string
 
+Both methods return `null` if no value is set for the passed key.
+
 The `key` parameter can be either a string or an array of strings. If `key` is a string, `get` and `getString` return the associated value. If `key` is an array, however, `get` and `getString` will walk down through a nested object to return the associated value. For example:
 
 ```typescript
@@ -58,15 +60,16 @@ let missingValue = config.get(["KEY", "vegetables"]);
 // This leaves us with:
 // outerValue = { "fruits": ["apples", "bananas"] }
 // innerValue = ["apples", "bananas"]
-// missingValue = undefined
+// missingValue = null
 ```
 
 ## Initializing `config`
 The `config` singleton takes a single, optional `ConfigOptions` argument to its asynchronous `initialize` call. The `ConfigOptions` object contains a number of options, including:
 
-- `defaultValues`: an object of key-value pairs which serve as default values---_i.e._ `defaultValues` is consulted if all other providers return `undefined`; defaults to an empty array
+- `defaultValues`: an object of key-value pairs which serve as default values---_i.e._ `defaultValues` is consulted if all other providers return `null`; defaults to an empty object
 - `requiredKeys`: an array of variable names which must be assigned a value before returning from the initialization; defaults to an empty array
 - `configFilename`: the location of the JSON file provider relative to the calling process's working directory; defaults to `./user-config.json`
+- `logger`: function to call in place of `console.log`
 
 __Note:__ `requiredKeys` and `defaultValues` should not share any keys. Sharing keys between these arguments results in unspecified behavior.
 
@@ -85,7 +88,8 @@ Let's say we have the following as our `./user-config.json` file:
     },
     "MONGO_URI": "mongodb://localhost:27017",
     "MONGO_CONFIG_DB": "config-db",
-    "MONGO_CONFIG_COLLECTION": "config-collection"
+    "MONGO_CONFIG_COLLECTION": "config-collection",
+    "SHARED_KEY": null
 }
 ```
 This means, _e.g._, `config.getString(["services", "service_1", "name"]) -> "foo"`.
@@ -104,7 +108,8 @@ Then, in the `config-db` database, set the `config-collection` collection's sing
                 "name": "soap",
                 "href": "soup.com",
             }
-    }
+    },
+    "SHARED_KEY": "sap"
 }
 ```
 
@@ -118,12 +123,14 @@ config.initialize().then( () => {
     let servicesObject_1 = config.get("SERVICES");
     let service_2 = config.get(["SERVICES", "service_2"]);
     let serviceName_2 = config.getString(["SERVICES", "service_2", "name"]);
+    let sharedKey = config.getString("SHARED_KEY");
 
     // Now, we have:
     // mongoUri = "mongodb://localhost:27017"
     // servicesObject_1 = { "service_1": { "name": "foo", ... } }
     // service_2 = { "name": "soap", ... }
     // serviceName_2 = "soap"
+    // sharedKey = "sap"
 });
 ```
 ## Using the default provider

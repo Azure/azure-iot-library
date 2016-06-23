@@ -8,7 +8,7 @@ import {EnvConfiguration} from "./envConfiguration";
  * Before each spec set the environment variables appropriately.
  * Specs test:
  *      - returned value is correct value and type
- *      - unset key returns undefined
+ *      - unset key returns null
  *      - errors thrown for incorrect usage of getString vs get<T>
  */
 describe("Environment configuration provider", () => {
@@ -53,10 +53,10 @@ describe("Environment configuration provider", () => {
             .toEqual("43");
     });
 
-    it("returns undefined for unset keys", () => {
-        expect(envConfig.getString(keysNotInEnv[0])).toBeUndefined();
-        expect(envConfig.get(keysNotInEnv[1])).toBeUndefined();
-        expect(envConfig.get(["NESTED_OBJECT", "fruits", "bananas"])).toBeUndefined();
+    it("returns null for unset keys", () => {
+        expect(envConfig.getString(keysNotInEnv[0])).toEqual(null);
+        expect(envConfig.get(keysNotInEnv[1])).toEqual(null);
+        expect(envConfig.get(["NESTED_OBJECT", "fruits", "bananas"])).toEqual(null);
     });
 
     it("throws an error when using get<T> for a string", () => {

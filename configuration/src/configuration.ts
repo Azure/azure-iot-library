@@ -18,7 +18,8 @@ const defaultConfigOptions: ConfigOptions = {
     defaultValues: {},
     requiredKeys: [],
     configFilename: "./user-config.json",
-    secondsToRetry: 5 * 60
+    secondsToRetry: 5 * 60,
+    logger: console.log
 };
 
 /*
@@ -33,12 +34,15 @@ const defaultConfigOptions: ConfigOptions = {
  * @param {number} secondsToRetry - Time to wait for Mongo database to
  * come online and contain requiredKeys, throwing an error after the
  * allotted time.
+ * @param {function} logger - Optional logger function to call in place of
+ * console.log.
  */
 export interface ConfigOptions {
     defaultValues?: { [key: string]: any };
     requiredKeys?: string[];
     configFilename?: string;
     secondsToRetry?: number;
+    logger?: Function;
 }
 
 export class Configuration implements IConfiguration {
@@ -76,7 +80,7 @@ export class Configuration implements IConfiguration {
         let defaultConfig = new DefaultConfiguration(params.defaultValues);
 
         // Add initial providers
-        await fileConfig.initialize(params.configFilename);
+        await fileConfig.initialize(params.configFilename, params.logger);
         // Check all providers, including defaultConfig, for mongo settings,
         // but then remove it from providers to preserve provider ordering
         this.providers = [fileConfig, envConfig, defaultConfig];
@@ -88,8 +92,8 @@ export class Configuration implements IConfiguration {
 
         // Optionally add mongo provider
         let requiredKeys: string[] = this.updatedRequiredKeys(params.requiredKeys);
-        if (typeof mongoUri === "undefined") {
-            console.log(noMongoUriMsg);
+        if (mongoUri === null) {
+            params.logger(noMongoUriMsg);
             if (requiredKeys.length > 0) {
                 throw new Error(`${requiredKeysErrMsg}: ${requiredKeys}`);
             }
@@ -99,13 +103,14 @@ export class Configuration implements IConfiguration {
                 dbName: dbName,
                 collectionName: collectionName,
                 requiredKeys: requiredKeys,
-                secondsToRetry: params.secondsToRetry
+                secondsToRetry: params.secondsToRetry,
+                logger: params.logger
             });
             this.providers.push(mongoConfig);
         }
 
         // Optionally add default provider
-        if (typeof params.defaultValues !== "undefined") {
+        if (params.defaultValues !== null) {
             this.providers.push(defaultConfig);
         }
     }
@@ -122,7 +127,7 @@ export class Configuration implements IConfiguration {
     private updatedRequiredKeys(requiredKeys: string[]): string[] {
         let newKeys: string[] = [];
         for (let key of requiredKeys) {
-            if (typeof this.get(key) === "undefined") {
+            if (this.get(key) === null) {
                 newKeys.push(key);
             }
         }
@@ -133,6 +138,8 @@ export class Configuration implements IConfiguration {
      * Get the value associated with the passed key from the ordered
      * configuration providers.
      *
+     * Returns null if no value is set.
+     *
      * Configuration providers include, in order of preference:
      *      - JSON file of user preference key-value pairs stored
      *        by default in ./user-config.json
@@ -141,22 +148,24 @@ export class Configuration implements IConfiguration {
      *      - the defaultValues object
      *
      * @param {string | string[]} key - Name of the variable to get.
-     * @return {T} Value of variable named by key.
+     * @return {T} Value of variable named by key. Null if no value is set.
      */
     public get<T>(key: string | string[]): T {
         for (let provider of this.providers) {
             let val: T = provider.get<T>(key);
-            if (typeof val !== "undefined") {
+            if (val !== null) {
                 return val;
             }
         }
-        return undefined;
+        return null;
     }
 
     /**
      * Get the value associated with the passed key from the ordered
      * configuration providers.
      *
+     * Returns null if no value is set.
+     *
      * Configuration providers include, in order of preference:
      *      - JSON file of user preference key-value pairs stored
      *        by default in ./user-config.json
@@ -165,16 +174,17 @@ export class Configuration implements IConfiguration {
      *      - the defaultValues object
      *
      * @param {string | string[]} key - Name of the variable to get.
-     * @return {string} Value of the configuration variable named by key.
+     * @return {string} Value of the configuration variable named by key. Null
+     * if no value is set.
      */
     public getString(key: string | string[]): string {
         for (let provider of this.providers) {
             let val: string = provider.getString(key);
-            if (typeof val !== "undefined") {
+            if (val !== null) {
                 return val;
             }
         }
-        return undefined;
+        return null;
     }
 }
 
