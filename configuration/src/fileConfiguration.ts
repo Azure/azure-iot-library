@@ -2,6 +2,7 @@
 
 import {readFile, access, F_OK} from "fs";
 import {IConfiguration} from "./IConfiguration";
+import {getVal} from "./getVal";
 
 const fileConsumedMsg: string = "User config file found";
 const fileReadingErrMsg: string =
@@ -19,20 +20,23 @@ export class FileConfiguration implements IConfiguration {
      * @param {string} configFilename - Name of the JSON file containing
      * configuration preferences.
      */
-    public async initialize(configFilename: string): Promise<void> {
+    public async initialize(configFilename: string, logger: Function = console.log): Promise<void> {
+        logger = logger || console.log;
+        // Check for file existence
         try {
             await this.checkFileExistence(configFilename);
         } catch (err) {
-            console.log(fileNotFoundMsg);
+            logger(fileNotFoundMsg);
             return;
         }
 
+        // Attempt to read file
         let fileConfigPromise = new Promise<string>( (resolve, reject) => {
             readFile(configFilename, "utf8", (err, result) => {
                 if (err) {
                     reject(err);
                 }
-                console.log(fileConsumedMsg);
+                logger(fileConsumedMsg);
                 resolve(result);
             });
         }).catch( (errMsg) => {
@@ -56,17 +60,16 @@ export class FileConfiguration implements IConfiguration {
     /**
      * Get the value associated with the passed key.
      *
+     * Returns null if no value is set.
+     *
      * Throw an error if the keyed value type is not a string.
      *
-     * @param {string} key - Name of variable to get.
+     * @param {string | string[]} key - Name of the variable to get.
      * @return {string} Value of variable named by key.
      */
-    public getString(key: string): string {
-        let val: string = this.fileConfig[key];
-        if (typeof val === "undefined") {
-            return val;
-        }
-        if (typeof val !== "string") {
+    public getString(key: string | string[]): string {
+        let val: any = getVal(key, this.fileConfig);
+        if (typeof val !== "string" && val !== null) {
             throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
         }
@@ -76,10 +79,13 @@ export class FileConfiguration implements IConfiguration {
     /**
      * Get the value associated with the passed key.
      *
-     * @param {string} key - Name of variable to get.
+     * Returns null if no value is set.
+     *
+     * @param {string | string[]} key - Name of the variable to get.
      * @return {T} Value of variable named by key.
      */
-    public get<T>(key: string): T {
-        return this.fileConfig[key] as T;
+    public get<T>(key: string | string[]): T {
+        let val: any = getVal(key, this.fileConfig);
+        return val as T;
     }
 }

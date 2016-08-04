@@ -1,7 +1,6 @@
 {
     "FILE_KEY_1": "file-val-1",
     "FILE_KEY_2": "file-val-2",
-    "MONGO_URI": "mongo-uri-val",
     "SHARED_KEY_1": "shared-val-1",
     "FILE_FRUIT_OBJECT": { "fruit": ["apple", "banana"] },
     "NESTED_OBJECT": {

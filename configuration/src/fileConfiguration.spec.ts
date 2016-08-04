@@ -6,7 +6,7 @@
  * Utilizes the ./test/user-config-test.json file.
  * Specs test:
  *      - returned value is correct value and type
- *      - unset keys return undefined
+ *      - unset keys return null
  *      - log whether config file is present
  *      - throw error if getString tries to return non-string value
  *      - throw error if config file unreadable or contains syntax errors
@@ -29,7 +29,14 @@ describe("File configuration provider", () => {
         fileKeys = {
             FILE_KEY_1: "file-val-1",
             FILE_KEY_2: "file-val-2",
-            FILE_FRUIT_OBJECT: { "fruit": ["apple", "banana"] }
+            FILE_FRUIT_OBJECT: { "fruit": ["apple", "banana"] },
+            NESTED_OBJECT: {
+                "apples": {
+                    "gala": 41,
+                    "jonagold": 42,
+                    "honeycrisp": "43"
+                }
+            }
         };
         keysNotInFile = ["NOT_PRESENT_1", "NOT_PRESENT_2"];
 
@@ -42,19 +49,28 @@ describe("File configuration provider", () => {
         expect(fileConfig.getString("FILE_KEY_2")).toEqual(fileKeys["FILE_KEY_2"]);
         expect(fileConfig.get<Object>("FILE_FRUIT_OBJECT"))
             .toEqual(fileKeys["FILE_FRUIT_OBJECT"]);
+        expect(fileConfig.get(["NESTED_OBJECT", "apples", "gala"]))
+            .toEqual(fileKeys["NESTED_OBJECT"]["apples"]["gala"]);
     });
 
-    it("returns undefined for unset keys", () => {
-        expect(fileConfig.getString(keysNotInFile[0])).toBeUndefined();
-        expect(fileConfig.getString(keysNotInFile[1])).toBeUndefined();
-        expect(fileConfig.get(keysNotInFile[0])).toBeUndefined();
-        expect(fileConfig.get(keysNotInFile[1])).toBeUndefined();
+    it("returns null for unset keys", () => {
+        expect(fileConfig.getString(keysNotInFile[0])).toEqual(null);
+        expect(fileConfig.getString(keysNotInFile[1])).toEqual(null);
+        expect(fileConfig.get(keysNotInFile[0])).toEqual(null);
+        expect(fileConfig.get(keysNotInFile[1])).toEqual(null);
+        expect(fileConfig.get(["NESTED_OBJECT", "apples", "red delicious"])).toEqual(null);
+        expect(fileConfig.get(["NESTED_OBJECT", "bananas"])).toEqual(null);
+        expect(fileConfig.get(["NESTED_OBJECT", "cherries", "royal ann"])).toEqual(null);
     });
 
     it("throws an error when using getString on a non-string type", () => {
         expect( () => fileConfig.get("FILE_KEY_1") ).not.toThrow();
         expect( () => fileConfig.get("FILE_KEY_2") ).not.toThrow();
         expect( () => fileConfig.getString("FILE_FRUIT_OBJECT") ).toThrow();
+        expect( () => fileConfig.  getString(["NESTED_OBJECT", "apples", "gala"]))
+            .toThrow();
+        expect(() => fileConfig.getString(["NESTED_OBJECT", "apples", "honeycrisp"]))
+            .not.toThrow();
     });
 });
 

@@ -6,7 +6,7 @@
  * Uses spies to stub/simulate relevant calls to the Mongo DB.
  * Specs test:
  *      - returned value is correct value and type
- *      - unset keys return undefined
+ *      - unset keys return null
  *      - throw error if getString tries to return non-string value
  *      - initialization waits correct number of seconds for DB connection
  */
@@ -26,7 +26,6 @@ describe("Mongo configuration provider", () => {
 
     // Prevent state leakage between specs; set spies
     beforeEach( done => async function() {
-        // Silence console logging, also used in specs
         spyOn(console, "log");
 
         // Reset state
@@ -35,7 +34,14 @@ describe("Mongo configuration provider", () => {
         mongoDocument = {
             KEY_1: "val_1",
             KEY_2: "val_2",
-            FRUIT_OBJECT: { "fruit": ["apple", "banana"] }
+            FRUIT_OBJECT: { "fruit": ["apple", "banana"] },
+            NESTED_OBJECT: {
+                "apples": {
+                    "gala": 41,
+                    "jonagold": 42,
+                    "honeycrisp": "43"
+                }
+            }
         };
         keysNotInMongo = ["NOT_PRESENT_1", "NOT_PRESENT_2"];
         defaultCollectionName = "config";
@@ -53,50 +59,67 @@ describe("Mongo configuration provider", () => {
                 const value = update[key];
                 mongoDocument[key] = value;
             });
-        collectionStub = jasmine.createSpy("collection")
-            .and.callFake( _ => {
-                // Return the stubbed colleciton object
-                return {
-                    "findOne": findOneStub,
-                    "updateOne": updateOneStub
-                };
-            });
+        collectionStub = jasmine.createSpy("collection").and.returnValue({
+                "findOne": findOneStub,
+                "updateOne": updateOneStub
+        });
 
         // Spy on MongoClient's connect method by allowing the ability
         // to get a stubbed collection object from db.collection(collectionName)
         spyOn(MongoClient, "connect").and.callFake( (_, callback) => {
-            const databaseStub = { collection: collectionStub };
+            const databaseStub = {
+                collection: collectionStub,
+                close: () => {}
+            };
             callback(null, databaseStub);
         });
 
         // Initialize mongoConfig instance
-        await mongoConfig.initialize(mongoUri);
+        await mongoConfig.initialize({
+            mongoUri: mongoUri,
+            logger: () => {}
+        });
         // Expect the Mongo connection to be called with provided Mongo URI (and callback)
-        expect(MongoClient.connect).toHaveBeenCalledWith(mongoUri, jasmine.any(Function));
+        expect(MongoClient.connect)
+            .toHaveBeenCalledWith(`${mongoUri}/config`, jasmine.any(Function));
         // Expect to connect to the correct collection
         expect(collectionStub).toHaveBeenCalledWith(defaultCollectionName);
         // Expect the single document to have been gotten (and callback)
         expect(findOneStub).toHaveBeenCalledWith({}, jasmine.any(Function));
     }().then(done, done.fail));
 
+    afterEach( () => {
+        // Check that the logger param is used, not the global console.log
+        expect(console.log).not.toHaveBeenCalled();
+    });
+
     it("gets correctly set values", () => {
         expect(mongoConfig.getString("KEY_1")).toEqual(mongoDocument["KEY_1"]);
         expect(mongoConfig.getString("KEY_2")).toEqual(mongoDocument["KEY_2"]);
         expect(mongoConfig.get<Object>("FRUIT_OBJECT"))
             .toEqual(mongoDocument["FRUIT_OBJECT"]);
+        expect(mongoConfig.get(["NESTED_OBJECT", "apples", "gala"]))
+            .toEqual(mongoDocument["NESTED_OBJECT"]["apples"]["gala"]);
     });
 
-    it("returns undefined for unset keys", () => {
-        expect(mongoConfig.getString(keysNotInMongo[0])).toBeUndefined();
-        expect(mongoConfig.getString(keysNotInMongo[1])).toBeUndefined();
-        expect(mongoConfig.get(keysNotInMongo[0])).toBeUndefined();
-        expect(mongoConfig.get(keysNotInMongo[1])).toBeUndefined();
+    it("returns null for unset keys", () => {
+        expect(mongoConfig.getString(keysNotInMongo[0])).toEqual(null);
+        expect(mongoConfig.getString(keysNotInMongo[1])).toEqual(null);
+        expect(mongoConfig.get(keysNotInMongo[0])).toEqual(null);
+        expect(mongoConfig.get(keysNotInMongo[1])).toEqual(null);
+        expect(mongoConfig.get(["NESTED_OBJECT", "apples", "red delicious"])).toEqual(null);
+        expect(mongoConfig.get(["NESTED_OBJECT", "bananas"])).toEqual(null);
+        expect(mongoConfig.get(["NESTED_OBJECT", "cherries", "royal ann"])).toEqual(null);
     });
 
     it("throws an error when using getString on a non-string type", () => {
         expect( () => mongoConfig.get("KEY_1") ).not.toThrow();
         expect( () => mongoConfig.get("KEY_2") ).not.toThrow();
         expect( () => mongoConfig.getString("FRUIT_OBJECT") ).toThrow();
+        expect( () => mongoConfig.  getString(["NESTED_OBJECT", "apples", "gala"]))
+            .toThrow();
+        expect(() => mongoConfig.getString(["NESTED_OBJECT", "apples", "honeycrisp"]))
+            .not.toThrow();
     });
 
     it("sets values correctly", done => async function() {
@@ -104,7 +127,7 @@ describe("Mongo configuration provider", () => {
         const newVal2: string[] = ["new", "val", "2"];
         // Check keys's initial values
         expect(mongoConfig.getString("KEY_1")).toEqual(mongoDocument["KEY_1"]);
-        expect(mongoConfig.getString("NOT_PRESENT_1")).toBeUndefined();
+        expect(mongoConfig.getString("NOT_PRESENT_1")).toEqual(null);
         // Set new values
         await mongoConfig.set("KEY_1", newVal1);
         await mongoConfig.set("NOT_PRESENT_1", newVal2);
@@ -116,10 +139,15 @@ describe("Mongo configuration provider", () => {
 
     it("waits for required keys", done => async function() {
         const requiredKeys: string[] = ["required-key-1", "required-key-2"];
-        spyOn(mongoConfig, "get").and.returnValue(undefined);
+        spyOn(mongoConfig, "get").and.returnValue(null);
         expect(mongoConfig.get).not.toHaveBeenCalled();
         try {
-            await mongoConfig.initialize(mongoUri, requiredKeys, "config", 3);
+            await mongoConfig.initialize({
+                mongoUri: mongoUri,
+                requiredKeys: requiredKeys,
+                secondsToRetry: 3,
+                logger: () => {}
+            });
             done.fail();  // expect initialization to fail
         } catch (err) {
             expect(mongoConfig.get).toHaveBeenCalled();
