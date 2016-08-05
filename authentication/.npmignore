@@ -2,10 +2,6 @@
 /node_modules/
 /typings/
 
-# Unnecessary built files
-*.tgz
-*.js.map
-
 # Source files
 *.ts
 !*.d.ts
