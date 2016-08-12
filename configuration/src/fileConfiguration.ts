@@ -1,15 +1,15 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {readFile, access, F_OK} from "fs";
-import {IConfiguration} from "./IConfiguration";
-import {getVal} from "./getVal";
+import {readFile, access, F_OK} from 'fs';
+import {IConfiguration} from './IConfiguration';
+import {getVal} from './getVal';
 
-const fileConsumedMsg: string = "User config file found";
+const fileConsumedMsg: string = 'User config file found';
 const fileReadingErrMsg: string =
-    "User config file found but unable to be read";
+    'User config file found but unable to be read';
 const fileNotFoundMsg: string =
-    "No user config file found - using environment variables or " +
-    "configuration service instead";
+    'No user config file found - using environment variables or ' +
+    'configuration service instead';
 
 export class FileConfiguration implements IConfiguration {
     private fileConfig: { [key: string]: any } = {};
@@ -32,7 +32,7 @@ export class FileConfiguration implements IConfiguration {
 
         // Attempt to read file
         let fileConfigPromise = new Promise<string>( (resolve, reject) => {
-            readFile(configFilename, "utf8", (err, result) => {
+            readFile(configFilename, 'utf8', (err, result) => {
                 if (err) {
                     reject(err);
                 }
@@ -69,7 +69,7 @@ export class FileConfiguration implements IConfiguration {
      */
     public getString(key: string | string[]): string {
         let val: any = getVal(key, this.fileConfig);
-        if (typeof val !== "string" && val !== null) {
+        if (typeof val !== 'string' && val !== null) {
             throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
         }

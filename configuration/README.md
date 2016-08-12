@@ -51,15 +51,15 @@ Both methods return `null` if no value is set for the passed key.
 The `key` parameter can be either a string or an array of strings. If `key` is a string, `get` and `getString` return the associated value. If `key` is an array, however, `get` and `getString` will walk down through a nested object to return the associated value. For example:
 
 ```typescript
-// Let's say config.get("KEY") -> { "fruits": ["apples", "bananas"] }
+// Let's say config.get('KEY') -> { 'fruits': ['apples', 'bananas'] }
 
-let outerValue = config.get("KEY");
-let innerValue = config.get(["KEY", "fruits"]);
-let missingValue = config.get(["KEY", "vegetables"]);
+let outerValue = config.get('KEY');
+let innerValue = config.get(['KEY', 'fruits']);
+let missingValue = config.get(['KEY', 'vegetables']);
 
 // This leaves us with:
-// outerValue = { "fruits": ["apples", "bananas"] }
-// innerValue = ["apples", "bananas"]
+// outerValue = { 'fruits': ['apples', 'bananas'] }
+// innerValue = ['apples', 'bananas']
 // missingValue = null
 ```
 
@@ -92,7 +92,7 @@ Let's say we have the following as our `./user-config.json` file:
     "SHARED_KEY": null
 }
 ```
-This means, _e.g._, `config.getString(["services", "service_1", "name"]) -> "foo"`.
+This means, _e.g._, `config.getString(['services', 'service_1', 'name']) -> 'foo'`.
 
 Now, to provision a `mongo` provider with `service_2`, we'll choose
 
@@ -116,21 +116,21 @@ Then, in the `config-db` database, set the `config-collection` collection's sing
 This results in the following:
 
 ```typescript
-import {config} from "@azure-iot/configuration";
+import {config} from '@azure-iot/configuration';
 
 config.initialize().then( () => {
-    let mongoUri = config.getString("MONGO_URI");
-    let servicesObject_1 = config.get("SERVICES");
-    let service_2 = config.get(["SERVICES", "service_2"]);
-    let serviceName_2 = config.getString(["SERVICES", "service_2", "name"]);
-    let sharedKey = config.getString("SHARED_KEY");
+    let mongoUri = config.getString('MONGO_URI');
+    let servicesObject_1 = config.get('SERVICES');
+    let service_2 = config.get(['SERVICES', 'service_2']);
+    let serviceName_2 = config.getString(['SERVICES', 'service_2', 'name']);
+    let sharedKey = config.getString('SHARED_KEY');
 
     // Now, we have:
-    // mongoUri = "mongodb://localhost:27017"
-    // servicesObject_1 = { "service_1": { "name": "foo", ... } }
-    // service_2 = { "name": "soap", ... }
-    // serviceName_2 = "soap"
-    // sharedKey = "sap"
+    // mongoUri = 'mongodb://localhost:27017'
+    // servicesObject_1 = { 'service_1': { 'name': 'foo', ... } }
+    // service_2 = { 'name': 'soap', ... }
+    // serviceName_2 = 'soap'
+    // sharedKey = 'sap'
 });
 ```
 ## Using the default provider
@@ -139,35 +139,35 @@ This example uses the `env` provider to draw from environment variables, but fal
 Remember that the strict order of provider preference is `file`, `env`, `mongo`, and then `default`.
 
 ```typescript
-import {config} from "@azure-iot/configuration";
+import {config} from '@azure-iot/configuration';
 
 async function example(): Promise<void> {
     // Set an environment variable
-    process.env["SOUP"] = "soap";
+    process.env['SOUP'] = 'soap';
 
     // Create an object of default values
     let defaultValues = {
-        "FRUITS": ["cherries", "dates"],
-        "REQUIRED_KEY": "bar"
+        'FRUITS': ['cherries', 'dates'],
+        'REQUIRED_KEY': 'bar'
     }
 
     // Asynchronously initialize the config service
     // with default values; won't return from initializing
     // until REQUIRED_KEY has a value
     await config.initialize({
-        requiredKeys: ["REQUIRED_KEY"],
+        requiredKeys: ['REQUIRED_KEY'],
         defaultValues: defaultValues
     });
 
     // Get values from the config instance
-    let soup = config.getString("soup");
-    let fruits = config.get("FRUITS");
+    let soup = config.getString('soup');
+    let fruits = config.get('FRUITS');
 }
 
 example().then(
     // Now, we have:
-    // soup = "soap"
-    // fruits = ["cherries", "dates"]
+    // soup = 'soap'
+    // fruits = ['cherries', 'dates']
 );
 ```
 
@@ -209,7 +209,7 @@ _Setting a source._ Choosing the database, collection, and document to source fo
 - Collection: the utilized collection is pulled from the `MONGO_CONFIG_COLLECTION` configuration variable; defaults to `config`
 - Document: currently, the chosen collection must contain only a single document
 
-_Waiting for variables._ Let's say another microservice is inserting variables into the Mongo DB in parallel to the calling of `config.initialize`. By specifying the `requiredKeys` argument to `config.initialize`, the method will wait until all of the keys in `requiredKeys` have been found by _any_ provider. For example, to wait for the `SERVICES` key to appear in the `mongo` provider (and assuming there is no `SERVICES` key in either the `file` or `env` providers), you would initialize config with `config.initialize({requiredKeys: ["SERVICES"]})`.
+_Waiting for variables._ Let's say another microservice is inserting variables into the Mongo DB in parallel to the calling of `config.initialize`. By specifying the `requiredKeys` argument to `config.initialize`, the method will wait until all of the keys in `requiredKeys` have been found by _any_ provider. For example, to wait for the `SERVICES` key to appear in the `mongo` provider (and assuming there is no `SERVICES` key in either the `file` or `env` providers), you would initialize config with `config.initialize({requiredKeys: ['SERVICES']})`.
 
 _Shallow reads._ Because `get` and `getString` are synchronous methods, reads to the `mongo` provider are necessarily shallow reads. To ensure that the provider has values for certain keys before returning from initialization, utilize the `requiredKeys` parameter to `config.initialize`.
 
@@ -221,14 +221,14 @@ _Shallow reads._ Because `get` and `getString` are synchronous methods, reads to
 Each provider can also be used independently of `Configuration`. Specifically, the `MongoConfiguration` class can be used to set values through to a Mongo DB directly, as shown below:
 
 ```typescript
-import {MongoConfiguration} from "@azure-iot/configuration";
+import {MongoConfiguration} from '@azure-iot/configuration';
 
 async function usingProviders() {
     let mongoConfig = new MongoConfiguration();
     await mongoConfig.initialize({
-        mongoUri: "mongodb://localhost:27017"
+        mongoUri: 'mongodb://localhost:27017'
     });
-    await mongoConfig.set("fruitKey", {"fruits": ["apple", "banana"]});
+    await mongoConfig.set('fruitKey', {'fruits': ['apple', 'banana']});
 }
 
 usingProviders().then(

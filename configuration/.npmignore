@@ -1,24 +1,23 @@
 # Modules
-/node_modules/
-/typings/
+.npmignore
+typings/
 
 # Unnecessary built files
-/build-scripts/
-*.tgz
+build-scripts/
 
 # Source files
-*.ts
-!*.d.ts
-lib.d.ts
+src/
 ts*.json
 
 # Test files
-/test/
-/dist/pretest*
+test/
+dist/pretest*
 *.spec.*
-user-config.json
 gulpfile.js
 
 # Coverage reports
-/dist/html-report/
-/dist/coverage*
+dist/html-report/
+dist/coverage*
+
+# User files
+user-config.json

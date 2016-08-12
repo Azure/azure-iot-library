@@ -1,21 +1,21 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {MongoClient, Db, Collection} from "mongodb";
-import {IConfiguration} from "./IConfiguration";
-import {getVal} from "./getVal";
+import {MongoClient, Db, Collection} from 'mongodb';
+import {IConfiguration} from './IConfiguration';
+import {getVal} from './getVal';
 
 const timeoutSeconds: number = 8;
-const connectionSuccessMsg: string = "Connected to configuration database";
+const connectionSuccessMsg: string = 'Connected to configuration database';
 const requiredKeysErrMsg: string =
-    "Configuration service cannot find the required keys";
+    'Configuration service cannot find the required keys';
 const defaultMongoOptions: MongoOptions = {
-    mongoUri: "",  // this is a required value, default will never be used
-    dbName: "config",
-    collectionName: "config",
+    mongoUri: '',  // this is a required value, default will never be used
+    dbName: 'config',
+    collectionName: 'config',
     requiredKeys: [],
     secondsToRetry: 5 * 60,
     logger: console.log
-}
+};
 
 /*
  * Set of options for MongoConfiguration's initialize method.
@@ -43,7 +43,6 @@ export interface MongoOptions {
 export class MongoConfiguration implements IConfiguration {
     private mongoConfig: { [key: string]: any } = {};
     private params: MongoOptions;
-    private mongoUri: string;
 
     /**
      * Asynchronously initialize configuration values from the passed
@@ -133,7 +132,7 @@ export class MongoConfiguration implements IConfiguration {
      */
     public getString(key: string | string[]): string {
         let val: any = getVal(key, this.mongoConfig);
-        if (typeof val !== "string" && val !== null) {
+        if (typeof val !== 'string' && val !== null) {
             throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
         }

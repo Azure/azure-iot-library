@@ -1,6 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {EnvConfiguration} from "./envConfiguration";
+import {EnvConfiguration} from './envConfiguration';
 
 /**
  * Test EnvConfiguration's getString and get<T> methods.
@@ -11,7 +11,7 @@ import {EnvConfiguration} from "./envConfiguration";
  *      - unset key returns null
  *      - errors thrown for incorrect usage of getString vs get<T>
  */
-describe("Environment configuration provider", () => {
+describe('Environment configuration provider', () => {
     let envConfig: EnvConfiguration;
     let envKeys: { [key: string]: string };
     let fruitsObject: { [key: string]: string[] };
@@ -22,15 +22,15 @@ describe("Environment configuration provider", () => {
         envConfig = new EnvConfiguration();
         // Environment variables and expected outputs
         envKeys = {
-            CONN_STR: "iot-hub-conn-str-val",
-            MONGO_URI: "mongodb://localhost:27017/test",
+            CONN_STR: 'iot-hub-conn-str-val',
+            MONGO_URI: 'mongodb://localhost:27017/test',
             STRINGIFIED_FRUITS: `{"fruits":["apple","banana"]}`,
             NESTED_OBJECT: `{"fruits":{"apples":{"gala":41,"jonagold":42,"honeycrisp":"43"}}}`
         };
         fruitsObject = {
-            fruits: ["apple", "banana"]
+            fruits: ['apple', 'banana']
         };
-        keysNotInEnv = ["NOT_PRESENT_1", "NOT_PRESENT_2"];
+        keysNotInEnv = ['NOT_PRESENT_1', 'NOT_PRESENT_2'];
 
         // Add desired keys in
         for (let key in envKeys) {
@@ -43,28 +43,28 @@ describe("Environment configuration provider", () => {
 
     });
 
-    it("gets correctly set values", () => {
-        expect(envConfig.getString("CONN_STR")).toEqual(envKeys["CONN_STR"]);
-        expect(envConfig.getString("MONGO_URI")).toEqual(envKeys["MONGO_URI"]);
-        expect(envConfig.get<{ [key: string]: string[] }>("STRINGIFIED_FRUITS"))
+    it('gets correctly set values', () => {
+        expect(envConfig.getString('CONN_STR')).toEqual(envKeys['CONN_STR']);
+        expect(envConfig.getString('MONGO_URI')).toEqual(envKeys['MONGO_URI']);
+        expect(envConfig.get<{ [key: string]: string[] }>('STRINGIFIED_FRUITS'))
             .toEqual(fruitsObject);
-        expect(envConfig.get(["NESTED_OBJECT", "fruits", "apples", "gala"])).toEqual(41);
-        expect(envConfig.getString(["NESTED_OBJECT", "fruits", "apples", "honeycrisp"]))
-            .toEqual("43");
+        expect(envConfig.get(['NESTED_OBJECT', 'fruits', 'apples', 'gala'])).toEqual(41);
+        expect(envConfig.getString(['NESTED_OBJECT', 'fruits', 'apples', 'honeycrisp']))
+            .toEqual('43');
     });
 
-    it("returns null for unset keys", () => {
+    it('returns null for unset keys', () => {
         expect(envConfig.getString(keysNotInEnv[0])).toEqual(null);
         expect(envConfig.get(keysNotInEnv[1])).toEqual(null);
-        expect(envConfig.get(["NESTED_OBJECT", "fruits", "bananas"])).toEqual(null);
+        expect(envConfig.get(['NESTED_OBJECT', 'fruits', 'bananas'])).toEqual(null);
     });
 
-    it("throws an error when using get<T> for a string", () => {
-        expect( () => envConfig.get("CONN_STR") ).not.toThrow();
-        expect( () => envConfig.get("MONGO_URI") ).not.toThrow();
-        expect( () => envConfig.get("STRINGIFIED_FRUITS") ).not.toThrow();
-        expect( () => envConfig.getString("NESTED_OBJECT") ).not.toThrow();
-        expect( () => envConfig.get(["NESTED_OBJECT", "fruits"]) ).not.toThrow();
-        expect( () => envConfig.getString(["NESTED_OBJECT", "fruits"]) ).toThrow();
+    it('throws an error when using get<T> for a string', () => {
+        expect( () => envConfig.get('CONN_STR') ).not.toThrow();
+        expect( () => envConfig.get('MONGO_URI') ).not.toThrow();
+        expect( () => envConfig.get('STRINGIFIED_FRUITS') ).not.toThrow();
+        expect( () => envConfig.getString('NESTED_OBJECT') ).not.toThrow();
+        expect( () => envConfig.get(['NESTED_OBJECT', 'fruits']) ).not.toThrow();
+        expect( () => envConfig.getString(['NESTED_OBJECT', 'fruits']) ).toThrow();
     });
 });

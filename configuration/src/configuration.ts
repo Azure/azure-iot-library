@@ -1,23 +1,23 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {IConfiguration} from "./IConfiguration";
-import {FileConfiguration} from "./fileConfiguration";
-import {EnvConfiguration} from "./envConfiguration";
-import {MongoConfiguration} from "./mongoConfiguration";
-import {DefaultConfiguration} from "./defaultConfiguration";
+import {IConfiguration} from './IConfiguration';
+import {FileConfiguration} from './fileConfiguration';
+import {EnvConfiguration} from './envConfiguration';
+import {MongoConfiguration} from './mongoConfiguration';
+import {DefaultConfiguration} from './defaultConfiguration';
 
-const mongoUriKey: string = "MONGO_URI";
-const mongoDbNameKey: string = "MONGO_CONFIG_DB";
-const mongoCollectionNameKey: string = "MONGO_CONFIG_COLLECTION";
-const defaultDbName: string = "config";
-const defaultCollectionName: string = "config";
-const requiredKeysErrMsg: string = "Not all required keys were found";
+const mongoUriKey: string = 'MONGO_URI';
+const mongoDbNameKey: string = 'MONGO_CONFIG_DB';
+const mongoCollectionNameKey: string = 'MONGO_CONFIG_COLLECTION';
+const defaultDbName: string = 'config';
+const defaultCollectionName: string = 'config';
+const requiredKeysErrMsg: string = 'Not all required keys were found';
 const noMongoUriMsg: string =
-    "No Mongo URI found - using environment variables or user-config file instead";
+    'No Mongo URI found - using environment variables or user-config file instead';
 const defaultConfigOptions: ConfigOptions = {
     defaultValues: {},
     requiredKeys: [],
-    configFilename: "./user-config.json",
+    configFilename: './user-config.json',
     secondsToRetry: 5 * 60,
     logger: console.log
 };

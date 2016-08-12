@@ -7,7 +7,7 @@ export function getVal(keyArg: string | string[], configObject: { [key: string]:
     }
     let val: any;
     // Flat return with single key
-    if (typeof keyArg === "string") {
+    if (typeof keyArg === 'string') {
         val = configObject[keyArg];
         return val || null;
     }
@@ -28,7 +28,7 @@ export function getVal(keyArg: string | string[], configObject: { [key: string]:
 
 export function getEnvVal(keyArg: string | string[], returnAsString: boolean): any {
     // Flat return with single key
-    if (typeof keyArg === "string") {
+    if (typeof keyArg === 'string') {
         let val: string = process.env[keyArg];
         // If value is null or undefined, return null
         if (val == null) {
