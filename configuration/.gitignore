@@ -1,8 +1,10 @@
 # NodeJS
 node_modules/
-npm-debug.log
-tsd-debug.log
 
 # Build results
 typings/
 dist/
+
+# User files
+user-config.json
+*.log

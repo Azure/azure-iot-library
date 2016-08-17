@@ -1,7 +1,7 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {IConfiguration} from "./IConfiguration";
-import {getEnvVal} from "./getVal";
+import {IConfiguration} from './IConfiguration';
+import {getEnvVal} from './getVal';
 
 export class EnvConfiguration implements IConfiguration {
     /**
@@ -15,7 +15,7 @@ export class EnvConfiguration implements IConfiguration {
      */
     public getString(key: string | string[]): string {
         let val: any = getEnvVal(key, true);
-        if (typeof val !== "string" && val !== null) {
+        if (typeof val !== 'string' && val !== null) {
             throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
         }

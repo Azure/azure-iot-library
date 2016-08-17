@@ -2,11 +2,11 @@
 
 // Configuration
 var config = {
-    src: "./src",
-    cleanDir: "./dist",
-    testDir: "./dist",
-    tscDir: "./src",
-    tsConfig: "./tsconfig.json"
+    src: './src',
+    cleanDir: './dist',
+    testDir: './dist',
+    tscDir: './src',
+    tsConfig: './tsconfig.json'
 }
 
 // Public interface
