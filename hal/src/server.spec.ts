@@ -183,6 +183,7 @@ class TestAPI {
 let AltAPIName = 'alt';
 let AltAPIDocs = 'http://www.adatum.com/docs/{rel}';
 @provides(AltAPIName, { href: AltAPIDocs })
+@provides('secondary')
 class AltTestAPI {
     
     @route(Method.GET, '/cross')
@@ -206,7 +207,7 @@ describe('HAL API Tests', () => {
         request.url = url;
         request.method = method;
         request.next = {};
-        
+
         app(request, response, <express.NextFunction>function(error: any){
             done(error);
         });
@@ -244,12 +245,7 @@ describe('HAL API Tests', () => {
     }
 
     beforeEach(() => {
-        request = {
-            get path() {
-                return url.parse(this.url).pathname;
-            }
-        };
-
+        request = {};
         response = {};
         response.locals = {};
         response.json = (body: any) => {
@@ -288,13 +284,13 @@ describe('HAL API Tests', () => {
     
     it('Should return expected HAL result', done => {
         call('get', 'http://localhost/api/test/happy', done);
-        
+
         // Test _links
         expect(result).toBeDefined();
         expect(result._links).toBeDefined();
         
         // Test self link
-        expect(single(result._links, 'self').href).toBe(request.path);
+        expect(single(result._links, 'self').href).toBe('/api/test/happy');
         
         // Test curies
         testCuries(result, 0, TestAPIName, TestAPITemplate);

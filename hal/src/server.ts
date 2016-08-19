@@ -2,6 +2,7 @@
 
 import * as express from 'express';
 import * as http from 'http';
+import * as url from 'url';
 
 import {LinkRelation, Rel} from './constants';
 import {Response, templatize} from './response';
@@ -19,6 +20,10 @@ function self(method: Server.Method): boolean {
 
 function relative(app: express.Application, href: string): string {
     return href && href[0] === '/' ? app.path().replace(/\/+$/, '') + href : href;
+}
+
+function path(req: express.Request): string {
+    return url.parse(req.originalUrl).pathname;
 }
 
 export type Provider = { method: Server.Method, provides: Server.Method.Provides };
@@ -203,7 +208,7 @@ export class Server {
                     let hal = method.handler;
                     method.handler = function (req: express.Request, res: express.Response, next: express.NextFunction) {
                         let handler: Server.Method = _private(this).methods[methodName];
-                        return hal.call(this, req, Response.create(this, self(handler) && req.path, handler.hal.links, req, res), next);
+                        return hal.call(this, req, Response.create(this, self(handler) && path(req), handler.hal.links, req, res), next);
                     };
                     method.hal.handler = false;
                 }
@@ -238,9 +243,8 @@ export class Server {
     }
     
     static discovery(req: express.Request, res: express.Response, next: express.NextFunction) {
-        let hal = Response.create(null, req.path, [], req, res);
-        for (let serverName of Object.keys(Server._map)) {
-            let server = Server._map[serverName];
+        let hal = Response.create(null, path(req), [], req, res);
+        (new Set(Object.keys(Server._map).map(name => Server._map[name]))).forEach(server => {
             for (let methodName of Object.keys(_private(server).methods)) {
                 for (let provides of _private(server).methods[methodName].provides) {
                     if (provides.options.discoverable) {
@@ -248,7 +252,7 @@ export class Server {
                     }
                 }
             }
-        }
+        });
         hal.json({});
     };
 }
