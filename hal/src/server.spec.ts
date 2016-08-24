@@ -60,6 +60,7 @@ class TestAPI {
         });
         response.embed('extra', { value: 'test' });
         response.embed('custom', { value: 'test' }, { links: ['override'] });
+        response.embed('parent', { value: 'parent' }).embed('child', { value: 'child' });
         
         response.json({
             simple: 'simple',
@@ -178,6 +179,13 @@ class TestAPI {
     ParameterFallthrough(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         response.json({});
     }
+
+    @route(Method.GET, '/child')
+    @provides('child')
+    @hal('alt:cross')
+    Child(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
+        response.json({});
+    };
 };
 
 let AltAPIName = 'alt';
@@ -255,6 +263,9 @@ describe('HAL API Tests', () => {
         
         router = express();
         router.use('/test', route(new TestAPI()));
+        router.use('/alt', route(new AltTestAPI()));
+
+        router.get('/', hal.discovery);
         
         app = express();
         app.use('/api', router);
@@ -294,6 +305,7 @@ describe('HAL API Tests', () => {
         
         // Test curies
         testCuries(result, 0, TestAPIName, TestAPITemplate);
+        testCuries(result, 1, AltAPIName, AltAPIDocs);
         
         // Test standard links
         testStandardLink(result, TestAPIName, 'mixed');
@@ -342,19 +354,31 @@ describe('HAL API Tests', () => {
         expect(customEmbedded._links).toBeDefined();
         expect(customEmbedded._links['self']).toBeUndefined();
         testStandardLink(customEmbedded, TestAPIName, 'override');
+
+        let parentEmbedded = single(result._embedded, `${TestAPIName}:parent`);
+        expect(parentEmbedded).toBeDefined();
+        expect(parentEmbedded['value']).toBe('parent');
+        expect(parentEmbedded._links).toBeUndefined();
+        expect(parentEmbedded._embedded).toBeDefined();
+
+        let childEmbedded = single(parentEmbedded._embedded, `${TestAPIName}:child`);
+        expect(childEmbedded).toBeDefined();
+        expect(childEmbedded['value']).toBe('child');
+        expect(childEmbedded._links).toBeDefined();
+        expect(single(childEmbedded._links, 'self').href).toBe('/api/test/child');
+        expect(childEmbedded._links['curies']).toBeUndefined();
+        testStandardLink(childEmbedded, AltAPIName, 'cross');
  
         // Test content
         expect(result['simple']).toBe('simple');
         expect(result['complex']).toBeDefined();
         expect(result['complex'].value).toBe('value');
-        
+
         done();
     });
     
 
     it('Cross-class rels should link properly', done => {
-        router.use('/alt', route(new AltTestAPI()));
-
         call('get', 'http://localhost/api/alt/cross', done);
         
         // Test curies
@@ -367,10 +391,6 @@ describe('HAL API Tests', () => {
     });
     
     it('Discoverable routes should be discoverable', done => {
-        router.use('/alt', route(new AltTestAPI()));
-
-        router.get('/', hal.discovery);
-        
         call('get', 'http://localhost/api/', done);
         
         // Test _links
