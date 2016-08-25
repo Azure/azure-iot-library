@@ -294,14 +294,14 @@ describe('HAL API Tests', () => {
     
     
     it('Should return expected HAL result', done => {
-        call('get', 'http://localhost/api/test/happy', done);
+        call('get', 'http://localhost/api/test/happy?test=true', done);
 
         // Test _links
         expect(result).toBeDefined();
         expect(result._links).toBeDefined();
         
         // Test self link
-        expect(single(result._links, 'self').href).toBe('/api/test/happy');
+        expect(single(result._links, 'self').href).toBe('/api/test/happy?test=true');
         
         // Test curies
         testCuries(result, 0, TestAPIName, TestAPITemplate);

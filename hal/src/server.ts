@@ -19,7 +19,7 @@ function relative(app: express.Application, href: string): string {
 }
 
 function path(req: express.Request): string {
-    return url.parse(req.originalUrl).pathname;
+    return url.parse(req.originalUrl).path;
 }
 
 export type Provider = { method: Server.Method, provides: Server.Method.Provides };
