@@ -88,7 +88,7 @@ export namespace hal {
     }
     export interface Response {
         link(rel: Rel, overrides?: Overrides): void;
-        embed(rel: Rel, value: Object, overrides?: Overrides): void;
+        embed(rel: Rel, value: Object, overrides?: Overrides): Response;
         docs(name: string, href: string): void;
     }
     export const discovery: express.RequestHandler = Server.discovery;

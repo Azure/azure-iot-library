@@ -61,43 +61,53 @@ function ensureArray<T>(set: { [rel: string]: T | T[] }, rel: Rel, ensure: boole
     }
 }
 
-export class Response {
-    static create(server: Server, path: string, links: Rel[], req: express.Request, res: express.Response): express.Response & hal.Response {
+export class Response implements hal.Response {
+    private static resource(resolved: hal.Overrides, root?: hal.Response, data?: any): hal.Response {
+        let res = {};
+
         res[Response.Private] = <Response.Private>{
-            server: server,
-            params: req.params,
-            hal: halson({}),
+            server: resolved.server,
+            params: resolved.params,
+            hal: halson(data || {}),
+            root: root || res,
             resolve: Response.prototype._resolve.bind(res),
             docs: Response.prototype._docs.bind(res)
         };
         
-        let response = Object.assign(res, {
+        let resource = Object.assign(res, {
             link: Response.prototype.link.bind(res),
             embed: Response.prototype.embed.bind(res),
-            docs: Response.prototype.docs.bind(res),
-            json: Response.prototype.json.bind(res, res.json.bind(res))
+            docs: Response.prototype.docs.bind(res)
         });
         
-        Response.prototype._initialize.bind(res)(path, links);
+        Response.prototype._initialize.bind(res)(resolved);
         
-        return response;
+        return resource;
+    }
+
+    static create(server: Server, href: string, links: Rel[], req: express.Request, res: express.Response): express.Response & hal.Response {
+        let resource = Response.resource({ server, href, links, params: req.params });
+        return Object.assign(res, resource, {
+            json: Response.prototype.json.bind(resource, res.json.bind(res))
+        });
     }
     
-    private _initialize(path: string, links: Rel[]) {
+    private _initialize(resolved: hal.Overrides) {
         // Add all of the default links
-        if (path) {
-            _private(this).hal.addLink('self', path);
-        }
-        if (links) {
-            for (let link of links) {
-                this.link(link);
+        if (resolved.links) {
+            for (let link of resolved.links) {
+                if (link === LinkRelation.Self) {
+                    _private(this).hal.addLink('self', templateLink(resolved));
+                } else {
+                    this.link(link);
+                }
             }
         }
     }
 
     json(original: express.Send, data: any): express.Response {
         ensureArray(_private(this).hal._links, CURIES, true);
-        
+
         // HAL responses are just JSON objects with specified properties;
         // we create the actual response by merging in our JSON object
         return original(Object.assign(_private(this).hal, data));
@@ -153,38 +163,26 @@ export class Response {
         });
     }
     
-    embed(rel: Rel, value: Object, overrides?: hal.Overrides) {
+    embed(rel: Rel, value: Object, overrides?: hal.Overrides): hal.Response {
         overrides = overrides || {};
         let resolved = _private(this).resolve(rel, overrides)[0];
         if (resolved.rel) {
-            let hal = halson(value);
-            
-            // Add the links associated with this rel to the embedded object
-            for (let rel of resolved.links) {
-                if (rel === LinkRelation.Self) {
-                    if (resolved.href) {
-                        hal.addLink('self', templateLink({ href: resolved.href, params: resolved.params }));
-                    }
-                } else {
-                     _private(this).resolve(rel, { params: overrides.params, server: overrides.server }).forEach(link => {
-                        if (link.rel && link.href) {
-                            _private(this).docs(link);
-                            hal.addLink(link.rel.toString(), templateLink(link));
-                        }
-                    });
-                }
-            }
-            
+            let resource = Response.resource(resolved, _private(this).root, value);
             _private(this).docs(resolved);
-            _private(this).hal.addEmbed(resolved.rel.toString(), hal);
+            _private(this).hal.addEmbed(resolved.rel.toString(), _private(resource).hal);
             ensureArray(_private(this).hal._embedded, resolved.rel, overrides.array);
+            return resource;
+        } else {
+            return Response.resource(
+                Object.assign({ server: _private(this).server, params: _private(this).params }, overrides),
+                _private(this).root, value);
         }
     }
     
     docs(name: string, href: string) {
-        // Add the curie shorthand if it's not already present
-        if (!_private(this).hal.getLink(CURIES, (link: Hal.Link) => link.name === name)) {
-            _private(this).hal.addLink(CURIES, templateLink({
+        // Add the curie shorthand to the root object if it's not already present
+        if (!_private(_private(this).root).hal.getLink(CURIES, (link: Hal.Link) => link.name === name)) {
+            _private(_private(this).root).hal.addLink(CURIES, templateLink({
                 href: href,
                 id: name,
                 params: {}
@@ -198,12 +196,13 @@ export namespace Response {
         server: Server;
         params: any;
         hal: halson.HALSONResource & Hal.Resource;
+        root: hal.Response;
         resolve(rel: Rel, overrides: hal.Overrides): hal.Overrides[];
         docs(resolved: hal.Overrides): void;
     }
     export const Private = Symbol();
 }
 
-function _private(response: Response): Response.Private {
+function _private(response: hal.Response): Response.Private {
     return response[Response.Private];
 }

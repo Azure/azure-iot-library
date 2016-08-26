@@ -72,7 +72,7 @@ The additional functionality added to the `express.Response` object by the `@hal
         * `links` [Array&lt;string | LinkRelation&gt;]: The array of rels associated with this link. This corresponds to the array of rels provided to the `@hal` decorator for this link, plus the 'self' rel if it would typically be present, and is used for link embedding when necessary.
         * `id` [string]: The 'name' parameter for this link will be set to this member of the params object.
         * `title` [string]: The 'title' parameter for this link will be set to this value.
-* `embed(rel, value, [overrides])`: Dynamically adds an embedded value to the response.
+* `embed(rel, value, [overrides])`: Dynamically adds an embedded value to the response. Returns a `hal.Response` to provide HAL functionality on the embedded response (but not Express functionality).
     * `rel` [string | LinkRelation]: The rel under which to add the embedded value. The value will automatically be given a 'self' link in accordance with this rel, unless it is overridden.
     * `value` [Object]: The JSON object to embed.
     * `overrides` [hal.Overrides] *(optional)*: Allows you to override the default behavior of the rel, as described above.

@@ -60,6 +60,7 @@ class TestAPI {
         });
         response.embed('extra', { value: 'test' });
         response.embed('custom', { value: 'test' }, { links: ['override'] });
+        response.embed('parent', { value: 'parent' }).embed('child', { value: 'child' });
         
         response.json({
             simple: 'simple',
@@ -178,11 +179,19 @@ class TestAPI {
     ParameterFallthrough(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         response.json({});
     }
+
+    @route(Method.GET, '/child')
+    @provides('child')
+    @hal('alt:cross')
+    Child(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
+        response.json({});
+    };
 };
 
 let AltAPIName = 'alt';
 let AltAPIDocs = 'http://www.adatum.com/docs/{rel}';
 @provides(AltAPIName, { href: AltAPIDocs })
+@provides('secondary')
 class AltTestAPI {
     
     @route(Method.GET, '/cross')
@@ -206,7 +215,7 @@ describe('HAL API Tests', () => {
         request.url = url;
         request.method = method;
         request.next = {};
-        
+
         app(request, response, <express.NextFunction>function(error: any){
             done(error);
         });
@@ -244,12 +253,7 @@ describe('HAL API Tests', () => {
     }
 
     beforeEach(() => {
-        request = {
-            get path() {
-                return url.parse(this.url).pathname;
-            }
-        };
-
+        request = {};
         response = {};
         response.locals = {};
         response.json = (body: any) => {
@@ -259,6 +263,9 @@ describe('HAL API Tests', () => {
         
         router = express();
         router.use('/test', route(new TestAPI()));
+        router.use('/alt', route(new AltTestAPI()));
+
+        router.get('/', hal.discovery);
         
         app = express();
         app.use('/api', router);
@@ -287,17 +294,18 @@ describe('HAL API Tests', () => {
     
     
     it('Should return expected HAL result', done => {
-        call('get', 'http://localhost/api/test/happy', done);
-        
+        call('get', 'http://localhost/api/test/happy?test=true', done);
+
         // Test _links
         expect(result).toBeDefined();
         expect(result._links).toBeDefined();
         
         // Test self link
-        expect(single(result._links, 'self').href).toBe(request.path);
+        expect(single(result._links, 'self').href).toBe('/api/test/happy?test=true');
         
         // Test curies
         testCuries(result, 0, TestAPIName, TestAPITemplate);
+        testCuries(result, 1, AltAPIName, AltAPIDocs);
         
         // Test standard links
         testStandardLink(result, TestAPIName, 'mixed');
@@ -346,19 +354,31 @@ describe('HAL API Tests', () => {
         expect(customEmbedded._links).toBeDefined();
         expect(customEmbedded._links['self']).toBeUndefined();
         testStandardLink(customEmbedded, TestAPIName, 'override');
+
+        let parentEmbedded = single(result._embedded, `${TestAPIName}:parent`);
+        expect(parentEmbedded).toBeDefined();
+        expect(parentEmbedded['value']).toBe('parent');
+        expect(parentEmbedded._links).toBeUndefined();
+        expect(parentEmbedded._embedded).toBeDefined();
+
+        let childEmbedded = single(parentEmbedded._embedded, `${TestAPIName}:child`);
+        expect(childEmbedded).toBeDefined();
+        expect(childEmbedded['value']).toBe('child');
+        expect(childEmbedded._links).toBeDefined();
+        expect(single(childEmbedded._links, 'self').href).toBe('/api/test/child');
+        expect(childEmbedded._links['curies']).toBeUndefined();
+        testStandardLink(childEmbedded, AltAPIName, 'cross');
  
         // Test content
         expect(result['simple']).toBe('simple');
         expect(result['complex']).toBeDefined();
         expect(result['complex'].value).toBe('value');
-        
+
         done();
     });
     
 
     it('Cross-class rels should link properly', done => {
-        router.use('/alt', route(new AltTestAPI()));
-
         call('get', 'http://localhost/api/alt/cross', done);
         
         // Test curies
@@ -371,10 +391,6 @@ describe('HAL API Tests', () => {
     });
     
     it('Discoverable routes should be discoverable', done => {
-        router.use('/alt', route(new AltTestAPI()));
-
-        router.get('/', hal.discovery);
-        
         call('get', 'http://localhost/api/', done);
         
         // Test _links

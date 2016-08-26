@@ -2,6 +2,7 @@
 
 import * as express from 'express';
 import * as http from 'http';
+import * as url from 'url';
 
 import {LinkRelation, Rel} from './constants';
 import {Response, templatize} from './response';
@@ -13,12 +14,12 @@ export interface Namespace {
     auto?: boolean;
 }
 
-function self(method: Server.Method): boolean {
-    return (typeof method.hal.options.self === 'undefined' && method.route.verb === 'GET') || method.hal.options.self;
-}
-
 function relative(app: express.Application, href: string): string {
     return href && href[0] === '/' ? app.path().replace(/\/+$/, '') + href : href;
+}
+
+function path(req: express.Request): string {
+    return url.parse(req.originalUrl).path;
 }
 
 export type Provider = { method: Server.Method, provides: Server.Method.Provides };
@@ -80,13 +81,7 @@ export class Server {
                 href: relative(_private(server).app, rels[0].method.route.path),
 
                 // Merge the links into a single array, using the Set object to ensure uniqueness
-                links: Array.from(new Set(
-                    rels.reduce<Rel[]>(
-                        (links, rel) => links.concat(rel.method.hal.links),
-                        // If any of the verbs require a 'self' rel, include it
-                        rels.some(rel => self(rel.method)) ? [LinkRelation.Self] : []
-                    )
-                )),
+                links: Array.from(new Set(rels.reduce<Rel[]>((links, rel) => links.concat(rel.method.hal.links), []))),
                 
                 // For these options, prefer the value from the verbs in alphabetical order
                 id: rels[0].provides.options.id,
@@ -196,6 +191,12 @@ export class Server {
                         provides.rel = ns !== null ? parsed : provides.rel;
                     });
                 }
+
+                // If this method requires a 'self' rel and does not already have one, add it to the start of its list of rels
+                if (((typeof method.hal.options.self === 'undefined' && method.route.verb === 'GET') || method.hal.options.self)
+                    && method.hal.links.indexOf(LinkRelation.Self) < 0) {
+                    method.hal.links.unshift(LinkRelation.Self);
+                }
                 
                 // If this is a HAL handler, override the original method on the API so that the response
                 // can be replaced with a class that will return a HAL response
@@ -203,7 +204,7 @@ export class Server {
                     let hal = method.handler;
                     method.handler = function (req: express.Request, res: express.Response, next: express.NextFunction) {
                         let handler: Server.Method = _private(this).methods[methodName];
-                        return hal.call(this, req, Response.create(this, self(handler) && req.path, handler.hal.links, req, res), next);
+                        return hal.call(this, req, Response.create(this, path(req), handler.hal.links, req, res), next);
                     };
                     method.hal.handler = false;
                 }
@@ -238,9 +239,8 @@ export class Server {
     }
     
     static discovery(req: express.Request, res: express.Response, next: express.NextFunction) {
-        let hal = Response.create(null, req.path, [], req, res);
-        for (let serverName of Object.keys(Server._map)) {
-            let server = Server._map[serverName];
+        let hal = Response.create(null, path(req), [], req, res);
+        (new Set(Object.keys(Server._map).map(name => Server._map[name]))).forEach(server => {
             for (let methodName of Object.keys(_private(server).methods)) {
                 for (let provides of _private(server).methods[methodName].provides) {
                     if (provides.options.discoverable) {
@@ -248,7 +248,7 @@ export class Server {
                     }
                 }
             }
-        }
+        });
         hal.json({});
     };
 }
