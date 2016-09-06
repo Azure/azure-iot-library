@@ -260,6 +260,7 @@ describe('HAL API Tests', () => {
             result = body;
         };
         response.setHeader = () => {};
+        response.type = () => {};
         
         router = express();
         router.use('/test', route(new TestAPI()));

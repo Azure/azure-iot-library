@@ -88,7 +88,7 @@ export class Response implements hal.Response {
     static create(server: Server, href: string, links: Rel[], req: express.Request, res: express.Response): express.Response & hal.Response {
         let resource = Response.resource({ server, href, links, params: req.params });
         return Object.assign(res, resource, {
-            json: Response.prototype.json.bind(resource, res.json.bind(res))
+            json: Response.prototype.json.bind(res, res.json.bind(res))
         });
     }
     
@@ -107,6 +107,10 @@ export class Response implements hal.Response {
 
     json(original: express.Send, data: any): express.Response {
         ensureArray(_private(this).hal._links, CURIES, true);
+
+        // This method will be bound to an (express.Response & hal.Response) object;
+        // update the Express response to return the appropriate response type
+        (this as any).type('application/hal+json');
 
         // HAL responses are just JSON objects with specified properties;
         // we create the actual response by merging in our JSON object
