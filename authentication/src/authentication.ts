@@ -91,8 +91,12 @@ export class Authentication {
         app.use(passport.session());
         
         const ensureAuthenticated = (req: express.Request, res: express.Response, next) => {
-            if (!req.isAuthenticated()) {            
-                req.session['returnTo'] = req.originalUrl || req.url;
+            if (!req.isAuthenticated()) {    
+                // construct the current URL. Our services run on different 
+                // ports right now, so we need to preserve the full URL with
+                // possible nonstandard ports, which only the http host header
+                // provides. 
+                req.session['returnTo'] = `${req.protocol}://${req.get('host')}${req.originalUrl || req.url}`;
                 res.redirect(loginUrl);
             } else { 
                 next(); 

@@ -5,10 +5,12 @@ import {FileConfiguration} from './fileConfiguration';
 import {EnvConfiguration} from './envConfiguration';
 import {MongoConfiguration} from './mongoConfiguration';
 import {DefaultConfiguration} from './defaultConfiguration';
+import {KeyVaultConfiguration, KeyVaultConfigurationOptions} from './keyVaultConfiguration';
 
 const mongoUriKey: string = 'MONGO_URI';
 const mongoDbNameKey: string = 'MONGO_CONFIG_DB';
 const mongoCollectionNameKey: string = 'MONGO_CONFIG_COLLECTION';
+const keyVaultConfigKey = 'KEYVAULT';
 const defaultDbName: string = 'config';
 const defaultCollectionName: string = 'config';
 const requiredKeysErrMsg: string = 'Not all required keys were found';
@@ -45,8 +47,15 @@ export interface ConfigOptions {
     logger?: Function;
 }
 
+export interface Secret {
+    id: string;
+    value?: string;
+    contentType?: string;
+}
+
 export class Configuration implements IConfiguration {
     private providers: IConfiguration[] = [];
+    private keyVaultConfiguration: KeyVaultConfiguration = null;
 
     /**
      * Asynchronously initialize configuration providers.
@@ -112,6 +121,15 @@ export class Configuration implements IConfiguration {
         // Optionally add default provider
         if (params.defaultValues !== null) {
             this.providers.push(defaultConfig);
+        }
+
+        // Optionally add the keyvault provider:
+        const keyVaultConfigOptions = this.get<KeyVaultConfigurationOptions>(keyVaultConfigKey);
+        if (keyVaultConfigOptions) {
+            params.logger('Initializing KeyVault connection');
+            this.keyVaultConfiguration = KeyVaultConfiguration.initialize(keyVaultConfigOptions);
+        } else {
+            params.logger('KeyVault connection not initialized.');
         }
     }
 
@@ -185,6 +203,42 @@ export class Configuration implements IConfiguration {
             }
         }
         return null;
+    }
+
+    /**
+     * Gets the secret value associated with the specified key from the
+     * ordered configuration providers. For example, with a configuration like:
+     * { "AAD_SECRET": { "id": "https://foo.vault.azure.net/secrets/aad-secret"} },
+     * config.getSecret('AAD_SECRET') will fetch the value of the secret with the
+     * specified id from KeyVault.
+     * If the object already contains a 'value' field, this method will return
+     * the object as-is (useful for debugging purposes.)
+     *
+     * @param {string | string[]} key - Name of the variable to get.
+     * @return {Promise<Secret>} Value of the secret located at the id specified
+     * in the configuration object named by key. Null if no value is set.
+     */
+    public getSecret(key: string | string[]): Promise<Secret> {
+        const secret = this.get<Secret>(key);
+        if (secret === null) {
+            return Promise.resolve(null);
+        }
+
+        if (typeof(secret.value) !== 'undefined') {
+            return Promise.resolve(secret);
+        }
+
+        if (this.keyVaultConfiguration === null) {
+            return Promise.reject<Secret>(new Error(
+                'Could not fetch secret: provider not initialized'));
+        }
+
+        if (!secret.id) {
+            return Promise.reject<Secret>(new Error(
+                `Configuration value for secret '${key}' does not contain an id.`));
+        }
+
+        return this.keyVaultConfiguration.getSecret(secret.id);
     }
 }
 

@@ -72,6 +72,9 @@ describe('Configuration provider', () => {
                     'cripps pink': 'default',
                     'northern spy': 'default'
                 }
+            },
+            SECRET_KEY_1: {
+                value: 'secret-value-1'
             }
         };
         keysNotPresent = ['NOT_PRESENT_1', 'NOT_PRESENT_2'];
@@ -150,6 +153,28 @@ describe('Configuration provider', () => {
         expect(config.getString('SHARED_KEY_3')).toEqual(mongoKeys['SHARED_KEY_3']);
         expect(config.get(['NESTED_OBJECT', 'apples', 'northern spy'])).toEqual('default');
     });
+
+    it('get secret should return null for unset values', done => async function() {
+        // arrange
+        const key = keysNotPresent[0];
+
+        // act
+        const secret = await config.getSecret(key);
+
+        // assert
+        expect(secret).toBeNull();
+    }().then(done, done.fail));
+
+    it('get secret should return already-defined values', done => async function() {
+        // arrange
+        const key = 'SECRET_KEY_1';
+
+        // act
+        const secret = await config.getSecret(key);
+
+        // assert
+        expect(secret.value).toEqual('secret-value-1');
+    }().then(done, done.fail));
 });
 
 describe('Configuration provider with no Mongo URI', () => {

@@ -1,6 +1,6 @@
 {
   "name": "@azure-iot/authentication",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Provides Authentication support for Azure IOT microservices",
   "main": "src/authentication.js",
   "typings": "src/authentication.d.ts",

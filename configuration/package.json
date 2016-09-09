@@ -1,6 +1,6 @@
 {
   "name": "@azure-iot/configuration",
-  "version": "1.0.0-rc.6",
+  "version": "1.0.0-rc.7",
   "description": "Configuration support for Azure IoT microservices",
   "author": "Hunter Gatewood (https://hcgatewood.github.com/about)",
   "license": "See license in ./license.txt",
@@ -21,6 +21,8 @@
     "node": ">=6.1.0"
   },
   "dependencies": {
+    "adal-node": "^0.1.22",
+    "azure-keyvault": "^0.10.1",
     "mongodb": "^2.1.18"
   },
   "devDependencies": {
