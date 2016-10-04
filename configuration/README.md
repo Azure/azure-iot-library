@@ -17,7 +17,7 @@ __3. npm run build__
 This builds the project, putting the output into the base (`./dist`) folder.
 
 # Description
-This library provides the main `Configuration` module, which exports the `config` singleton to create a dictionary-like interface of configuration values. Once initialized, `config` provides the `getString` and generic `get<T>` methods, described further below.
+This library provides the main `Configuration` module, which exports the `config` singleton to create a dictionary-like interface of configuration values. Once initialized, `config` provides the `getSecret`, `getString` and generic `get<T>` methods, described further below.
 
 ## Providers
 Configuration keys are mapped to values from one of four optional _providers_, in order of preference:
@@ -29,6 +29,13 @@ Configuration keys are mapped to values from one of four optional _providers_, i
 
 The first provider to return a value other than `null` is considered authoritative. For example, if both the `file` and `default` providers contained a value for the same key, the `file` provider would be authoritative.
 
+The library also provides support for fetching secret configuration values
+from KeyVault, using a separate `keyVault` provider. This credentials to
+initialize the connection to KeyVault is fetched from the other providers
+listed below, but once set up, secrets are fetched using a separate `getSecret`
+API, not the usual `getString` and `get<T>` methods. The examples listed
+below demonstrate how to read and write secrets from KeyVault.
+
 ## Setting variables
 Configuration variables only need to be set for one configuration provider. Variables can be set for each of the providers in the following ways:
 
@@ -37,14 +44,21 @@ Configuration variables only need to be set for one configuration provider. Vari
 - `mongo` provider: either set key-value pairs directly, or use `MongoConfiguration.set`
 - `default` provider: include the key-value pair in the optional `defaultValues` parameter for `config.initialize`
 
+
+- `keyVault` provider: set the secret using the [Azure XPlat CLI](https://azure.microsoft.com/en-us/documentation/articles/xplat-cli-install/),
+    provide the values to authenticate with keyvault using the other providers listed below,
+    and then fetch secrets using the `getSecret` method.
+
+
 See the __Example__ section for more.
 
 
 ## Getting variables
-The `config` singleton (and each provider) implements the `IConfiguration` interface, which has both a `get<T>` and `getString` method:
+The `config` singleton (and each provider) implements the `IConfiguration` interface, which provides the `get<T>`, `getString`, and `getSecret` methods:
 
 - `get<T>(key)`: use when you expect the returned value to be anything other than a string; _e.g._ an object, array, etc.
 - `getString(key)`: use when you expect the returned value to be a string
+- `getSecret(key)`: use then you have to fetch secrets from KeyVault.
 
 Both methods return `null` if no value is set for the passed key.
 
@@ -61,6 +75,18 @@ let missingValue = config.get(['KEY', 'vegetables']);
 // outerValue = { 'fruits': ['apples', 'bananas'] }
 // innerValue = ['apples', 'bananas']
 // missingValue = null
+
+// Fetching secrets:
+// let's say config.get("AAD_SECRET") -> { "id": "https://foo.vault.azure.net/secrets/aad-secret"}
+const aadSecret = await config.getSecret('AAD_SECRET');
+
+// This will fetch the keyvault secret's URL from other providers,
+// fetch the secret value from keyvault, and return an object with
+// the following format:
+aadSecret = {
+    id: "https://foo.vault.azure.net/secrets/aad-secret",
+    value: "<secret value>"
+}
 ```
 
 ## Initializing `config`
@@ -170,6 +196,111 @@ example().then(
     // fruits = ['cherries', 'dates']
 );
 ```
+
+## Using the KeyVault provider
+1.  Initialize the connection to KeyVault with the authentication parameters.
+    Ensure you have the following configuration available in the
+    file/env/mongo/default providers:
+
+    ```
+    KEYVAULT: {
+        clientId: '<Client ID of the AAD application that has access to the KeyVault>',
+        certFile: '<Path to the service principal's certificate>',
+        certThumbprint: '<Thumbprint of the service principal's certificate>'
+    },
+    ```
+
+    The `config.initialize` method initializes the keyvault provider only if the
+    `KEYVAULT` configuration value is present in one of the other providers.
+
+2.  Once initialized, call the `getSecret` method to fetch the secret value from KeyVault:
+    ```typescript
+    // Fetching secrets:
+    // let's say config.get("AAD_SECRET") -> { "id": "https://foo.vault.azure.net/secrets/aad-secret"}
+    const aadSecret = await config.getSecret('AAD_SECRET');
+
+    // This will fetch the keyvault secret's URL from other providers,
+    // fetch the secret value from keyvault, and return an object with
+    // the following format:
+    aadSecret = {
+        id: "https://foo.vault.azure.net/secrets/aad-secret",
+        value: "<secret value>"
+    }
+    ```
+
+### Add secrets to KeyVault:
+1.  Install the [Azure XPlat CLI](https://azure.microsoft.com/en-us/documentation/articles/xplat-cli-install/)
+2.  `azure login`
+3.  `azure account set <subscription name>`
+4.  Create the KeyVault, if you don't already have one:
+    ```
+    azure keyvault create <vault-name> <resource-group> <location>
+    ```
+5.  Add secrets to KeyVault:
+    ```
+    azure keyvault secret set <vault-name> <secret-name> <secret-value>
+    ```
+
+### Create a service principal with access to KeyVault:
+1.  Create RSA cert
+    From https://unix.stackexchange.com/questions/131334/obtain-cer-file-from-pem-file
+    ```
+    openssl genrsa -out keyvault.pem 4096
+    ```
+
+2.  Create celf-signed x509 cert:
+    ```
+    openssl req -new -x509 -key keyvault.pem -out keyvault.cacert.pem -days 365
+    ```
+
+3.  Convert .pem file to .cer:
+    ```
+    openssl x509 -inform PEM -in keyvault.cacert.pem -outform DER -out keyvault.cer
+    ```
+
+4.  In powershell:
+    From https://azure.microsoft.com/en-us/documentation/samples/active-directory-dotnet-daemon-certificate-credential/
+
+    ```ps
+    $cer = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+    $cer.Import(".\keyvault.cer")
+    $bin = $cer.GetRawCertData()
+    $base64Value = [System.Convert]::ToBase64String($bin)
+    $bin = $cer.GetCertHash()
+    $base64Thumbprint = [System.Convert]::ToBase64String($bin)
+    $keyid = [System.Guid]::NewGuid().ToString()
+    ```
+
+4.  Download manifest of AAD app
+
+5.  Open the manifest if your favorite text editor, and replace the keyCredentials property with your new certificate information from above, using the following schema:
+    ```json
+    "keyCredentials": [
+        {
+            "customKeyIdentifier": "$base64Thumbprint_from_above",
+            "keyId": "$keyid_from_above",
+            "type": "AsymmetricX509Cert",
+            "usage": "Verify",
+            "value":  "$base64Value_from_above"
+        }
+    ]
+    ```
+
+6.  Save the edits to the application manifest, and upload it back into Azure AD by clicking Manage Manifest --> Upload Manifest. Note that the keyCredentials property is multi-valued, so you may upload multiple certificates for richer key managemnent.
+
+7.  Get the Object ID of the AAD app's service principal:
+    ```
+    > azure ad sp show --spn <aad client id>
+    info:    Executing command ad sp show
+    + Getting Active Directory service principals
+    data:    Object Id:               <object id of the service principal>
+    ```
+
+8.  Give the AAD Keyvault app access to the keyvault:
+    ```
+    azure keyvault set-policy <vault-name> --object-id <object-id-of-spn> --perms-to-secrets "[\"get\"]"
+    ```
+
 
 # Notes
 ### Recommended key casing
