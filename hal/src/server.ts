@@ -211,8 +211,19 @@ export class Server {
                 
                 // Method is type of Method (enum), convert back to string for express
                 if (_private(server).app[method.route.verb.toLowerCase()]) {
+                    // Reduce the full route to its path portion; HAL supports templated query parameters,
+                    // but Express does not
+                    let path = url.parse(method.route.path).pathname;
+
+                    // Bind the handler in a promise; Express does not use the return values of its handlers, 
+                    // and this allows us to properly catch error results from async methods
+                    let handler = ((handler: express.RequestHandler) => 
+                        (req: express.Request, res: express.Response, next: express.NextFunction) =>
+                            Promise.resolve(handler(req, res, next)).catch(next)
+                    )(method.handler.bind(server));
+
                     _private(server).app[method.route.verb.toLowerCase()].call(_private(server).app,
-                        method.route.path, method.middleware, method.handler.bind(server));
+                        path, method.middleware, handler);
                 } else {
                     console.error(`${method.route.verb} is not a valid HTTP method.`);
                 }

@@ -29,6 +29,11 @@ let TestAPITemplate = 'http://www.contoso.com/docs/{rel}';
     }
 
     response.locals.order.push('error');
+
+    // If we're in the async case, make sure we call done *after* we've hit the error handler
+    if ((<any>req).done) {
+        (<any>req).done();
+    }
     
     next();
 }, { error: true })
@@ -45,7 +50,7 @@ class TestAPI {
         
         next();
     })
-    @hal('mixed', 'middleware', 'NoHateoasBehavior', LinkRelation.Index, 'template', 'duplicate')
+    @hal('mixed', 'middleware', 'NoHateoasBehavior', LinkRelation.Index, 'template', 'duplicate', 'query')
     HappCase(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         response.link('extra');
         response.link('override', {
@@ -186,6 +191,12 @@ class TestAPI {
     Child(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         response.json({});
     };
+
+    @route('GET', '/query?q=:value')
+    @provides('query')
+    AsyncQuery(req: express.Request, response: express.Response, next: express.NextFunction) {
+        return Promise.reject(new Error());
+    };
 };
 
 let AltAPIName = 'alt';
@@ -260,6 +271,7 @@ describe('HAL API Tests', () => {
             result = body;
         };
         response.setHeader = () => {};
+        response.type = () => {};
         
         router = express();
         router.use('/test', route(new TestAPI()));
@@ -313,7 +325,6 @@ describe('HAL API Tests', () => {
         testStandardLink(result, TestAPIName, 'NoHateoasBehavior');
         
         // Test link-relation links
-
         expect(single(result._links, 'index').href).toBe('/api/test/index');
         
         // Test templated links
@@ -323,6 +334,11 @@ describe('HAL API Tests', () => {
         expect(templates[0].templated).toBe(true);
         expect(templates[1].href).toBe('/api/test/template/name');
         expect(templates[1].name).toBe('name');
+
+        // Test query-templated links
+        let query = single(result._links, `${TestAPIName}:query`);
+        expect(query.href).toBe('/api/test/query?q={value}');
+        expect(query.templated).toBe(true);
         
         // Test duplicate links
         let duplicates = array(result._links, `${TestAPIName}:duplicate`);
@@ -418,5 +434,10 @@ describe('HAL API Tests', () => {
         expect(result._links['self']).toBeUndefined();
  
         done();
+    });
+
+    it('Ensure async and query-parameter links are callable', done => {
+        request.done = done;
+        call('get', 'http://localhost/api/test/query?q=value', done);
     });
 });
