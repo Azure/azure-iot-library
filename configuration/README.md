@@ -29,12 +29,7 @@ Configuration keys are mapped to values from one of four optional _providers_, i
 
 The first provider to return a value other than `null` is considered authoritative. For example, if both the `file` and `default` providers contained a value for the same key, the `file` provider would be authoritative.
 
-The library also provides support for fetching secret configuration values
-from KeyVault, using a separate `keyVault` provider. This credentials to
-initialize the connection to KeyVault is fetched from the other providers
-listed below, but once set up, secrets are fetched using a separate `getSecret`
-API, not the usual `getString` and `get<T>` methods. The examples listed
-below demonstrate how to read and write secrets from KeyVault.
+The library also provides support for fetching secret configuration values from KeyVault, using a separate `keyVault` provider. This credentials to initialize the connection to KeyVault is fetched from the other providers listed below, but once set up, secrets are fetched using a separate `getSecret` API, not the usual `getString` and `get<T>` methods. The examples listed below demonstrate how to read and write secrets from KeyVault.
 
 ## Setting variables
 Configuration variables only need to be set for one configuration provider. Variables can be set for each of the providers in the following ways:
@@ -45,9 +40,7 @@ Configuration variables only need to be set for one configuration provider. Vari
 - `default` provider: include the key-value pair in the optional `defaultValues` parameter for `config.initialize`
 
 
-- `keyVault` provider: set the secret using the [Azure XPlat CLI](https://azure.microsoft.com/en-us/documentation/articles/xplat-cli-install/),
-    provide the values to authenticate with keyvault using the other providers listed below,
-    and then fetch secrets using the `getSecret` method.
+- `keyVault` provider: set the secret using the [Azure XPlat CLI](https://azure.microsoft.com/en-us/documentation/articles/xplat-cli-install/), provide the values to authenticate with keyvault using the other providers listed below, and then fetch secrets using the `getSecret` method.
 
 
 See the __Example__ section for more.
@@ -198,10 +191,7 @@ example().then(
 ```
 
 ## Using the KeyVault provider
-1.  Initialize the connection to KeyVault with the authentication parameters.
-    Ensure you have the following configuration available in the
-    file/env/mongo/default providers:
-
+1.  Initialize the connection to KeyVault with the authentication parameters. Ensure you have the following configuration available in the file/env/mongo/default providers:
     ```
     KEYVAULT: {
         clientId: '<Client ID of the AAD application that has access to the KeyVault>',
@@ -210,8 +200,7 @@ example().then(
     },
     ```
 
-    The `config.initialize` method initializes the keyvault provider only if the
-    `KEYVAULT` configuration value is present in one of the other providers.
+    The `config.initialize` method initializes the keyvault provider only if the `KEYVAULT` configuration value is present in one of the other providers.
 
 2.  Once initialized, call the `getSecret` method to fetch the secret value from KeyVault:
     ```typescript
