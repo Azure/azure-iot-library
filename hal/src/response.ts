@@ -2,56 +2,14 @@
 
 import * as express from 'express';
 import * as halson from 'halson';
-// These typings are not up-to-date, so we have to cast pathToRegexp to 'any' to use 'parse' and 'compile'
-import * as pathToRegexp from 'path-to-regexp';
 
 import {Server} from './server';
+import {Linker} from './linker';
+import {Template} from './template';
 import {Rel, LinkRelation, Hal} from './constants';
 import {hal} from './decorators';
 
 const CURIES = 'curies';
-
-function templateParams(href: string) {
-    let params: { [param: string]: string } = {};
-    let parsed = (<any>pathToRegexp).parse(href);
-    for (let param of parsed) {
-        if (param.repeat) {
-            params[param.name] = `{${param.delimiter}${param.name}*}`;
-        } else {
-            params[param.name] = `{${param.name}}`;
-        }
-    }
-    return params;
-}
-
-function templateDecode(href: string): string {
-    return href.replace(/%7B(.+)%7D/, param => decodeURIComponent(param));
-}
-
-export function templatize(href: string, params: any): string {
-    return templateDecode((<any>pathToRegexp).compile(href)(
-        Object.assign(templateParams(href), params)
-    ));
-}
-
-function templateLink(resolved: hal.Overrides): Hal.Link {
-    let link: Hal.Link = { href: resolved.href };
-    if (resolved.href && resolved.params) {
-        // Create templates for all undefined params and fully resolve the href
-        link.href = templatize(resolved.href, resolved.params);
-    }
-    if (/\{.+\}/.test(link.href)) {
-        // Since the default of templated is false, we only want it set at all if it is true
-        link.templated = true;
-    }
-    if (resolved.id) {
-        link.name = resolved.id;
-    }
-    if (resolved.title) {
-        link.title = resolved.title;
-    }
-    return link;
-}
 
 function ensureArray<T>(set: { [rel: string]: T | T[] }, rel: Rel, ensure: boolean) {
     // Conditionally ensure this link or embed is an array, even if it's only a single item
@@ -85,7 +43,7 @@ export class Response implements hal.Response {
         return resource;
     }
 
-    static create(server: Server, href: string, links: Rel[], req: express.Request, res: express.Response): express.Response & hal.Response {
+    static create(server: Object, href: string, links: Rel[], req: express.Request, res: express.Response): express.Response & hal.Response {
         let resource = Response.resource({ server, href, links, params: req.params });
         return Object.assign(res, resource, {
             json: Response.prototype.json.bind(res, res.json.bind(res))
@@ -97,7 +55,7 @@ export class Response implements hal.Response {
         if (resolved.links) {
             for (let link of resolved.links) {
                 if (link === LinkRelation.Self) {
-                    _private(this).hal.addLink('self', templateLink(resolved));
+                    _private(this).hal.addLink('self', Template.link(resolved));
                 } else {
                     this.link(link);
                 }
@@ -126,7 +84,7 @@ export class Response implements hal.Response {
             server: overrides.server || _private(this).server
         };
         
-        let links = Server.relLinks(base.server, base.rel) || [{}];
+        let links = Linker.getLinks(base.server, base.rel) || [{}];
 
         return links.map(link => {
             // Splice the automatic link resolution with the overrides
@@ -141,14 +99,14 @@ export class Response implements hal.Response {
             resolved.id = resolved.id && resolved.params[resolved.id];
 
             // Normalize the resolved rel; if it was overridden, bypass the server to prevent automatic namespacing
-            resolved.rel = Server.relNormalize(overrides.rel ? null : resolved.server, resolved.rel);
+            resolved.rel = Linker.normalize(overrides.rel ? null : resolved.server, resolved.rel);
             
             return resolved;
         });
     }
 
     private _docs(resolved: hal.Overrides) {
-        let docs = Server.relNamespace(resolved.server, resolved.rel);
+        let docs = Linker.getDocs(resolved.server, resolved.rel);
         if (docs) {
             this.docs(docs.name, docs.href);
         }
@@ -159,10 +117,10 @@ export class Response implements hal.Response {
          _private(this).resolve(rel, overrides).forEach(resolved => {
             if (resolved.rel && resolved.href) {
                 _private(this).docs(resolved);
-                _private(this).hal.addLink(resolved.rel.toString(), templateLink(resolved));
+                _private(this).hal.addLink(resolved.rel.toString(), Template.link(resolved));
                 ensureArray(_private(this).hal._links, resolved.rel, overrides.array);
             } else {
-                console.error(`Cannot find rel: ${Server.relNormalize(_private(this).server, rel)}`);
+                console.error(`Cannot find rel: ${Linker.normalize(_private(this).server, rel)}`);
             }
         });
     }
@@ -186,7 +144,7 @@ export class Response implements hal.Response {
     docs(name: string, href: string) {
         // Add the curie shorthand to the root object if it's not already present
         if (!_private(_private(this).root).hal.getLink(CURIES, (link: Hal.Link) => link.name === name)) {
-            _private(_private(this).root).hal.addLink(CURIES, templateLink({
+            _private(_private(this).root).hal.addLink(CURIES, Template.link({
                 href: href,
                 id: name,
                 params: {}
@@ -197,7 +155,7 @@ export class Response implements hal.Response {
 
 export namespace Response {
     export interface Private {
-        server: Server;
+        server: Object;
         params: any;
         hal: halson.HALSONResource & Hal.Resource;
         root: hal.Response;

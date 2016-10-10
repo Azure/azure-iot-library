@@ -4,7 +4,8 @@ export enum Method {
     GET,
     PUT,
     POST,
-    DELETE
+    DELETE,
+    PATCH
 };
 
 export type Verb = string | Method;

@@ -4,35 +4,19 @@ import * as express from 'express';
 
 import {Server} from './server';
 import {Method, Verb, Rel} from './constants';
+import {Api} from './api';
 
 type ExpressHandlerDescriptor = TypedPropertyDescriptor<express.RequestHandler>;
 
 export function provides(rel?: Rel, options?: provides.Options.Namespace & provides.Options.Rel): ClassDecorator & MethodDecorator {
-    options = options || {};
     return function (target: Object | Function, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --
-            let server = Server.class(target);
-            
-            // Decorators are called bottom to top so the specified name should always override the current name
-            server.name = (rel || target.name).toString();
-
-            server.docs[server.name] = {
-                name: server.name,
-                href: options.href || `/docs/${server.name}/:rel`,
-                auto: (typeof options.auto === 'undefined' && typeof options.href === 'undefined') || options.auto
-            };
-
+            Server.api(true, target).provides(rel && rel.toString(), options);
             return target;
         } else {
             // -- Method decorator --
-            let method = Server.method(target, methodName, descriptor.value);
-
-            method.provides.push({
-                rel: rel || methodName.toString(),
-                options: options || {}
-            });
-            
+            Server.api(true, target, methodName).provides(rel, options);
             return descriptor;
         }
     };
@@ -54,20 +38,10 @@ export namespace provides {
     }
 }
 
-// Use function overloading to prevent emitting the ... operator which is not currently supported by Node.js
-export function hal(...args: (Rel | hal.Options)[]): MethodDecorator;
-export function hal(): MethodDecorator {
-    let args: (Rel | hal.Options)[] = Array.from(arguments);
-    let links: Rel[] = <Rel[]>args.filter(arg => typeof arg !== 'object');
-    let options: hal.Options[] = <hal.Options[]>args.filter(arg => typeof arg === 'object');
+export function hal(...args: (Rel | hal.Options)[]): MethodDecorator {
     return function (target: Object, methodName: string | symbol, descriptor: ExpressHandlerDescriptor): ExpressHandlerDescriptor | void {
         // -- Method decorator --
-        let method = Server.method(target, methodName, descriptor.value);
-        
-        method.hal.links = method.hal.links.concat(links || []);
-        method.hal.options = Object.assign(method.hal.options, ...options);
-        method.hal.handler = true;
-        
+        Server.api(true, target, methodName).hal(...args);
         return descriptor;
     };
 }
@@ -103,38 +77,21 @@ export function route(first: Verb | Object, second?: string): express.Applicatio
     } else {
         return function (target: Object, methodName: string | symbol, descriptor: ExpressHandlerDescriptor): ExpressHandlerDescriptor | void {
             // -- Method decorator --
-            let method = Server.method(target, methodName, descriptor.value);
-
-            method.route.verb = typeof first === 'string' ? first.toUpperCase() : Method[first];
-            method.route.path = second;
-            
+            Server.api(true, target, methodName).route(first, second);
             return descriptor;
         };
     }
 }
 
 export function middleware(handler: express.RequestHandler | express.ErrorRequestHandler, options?: middleware.Options): ClassDecorator & MethodDecorator {
-    options = options || {};
     return function (target: Function | Object, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --
-            let server = Server.class(target);
-        
-            // Decorators are called bottom to top so we have to reverse the middleware list
-            if (options.error) {
-                server.middleware.after = [<express.ErrorRequestHandler>handler].concat(server.middleware.after);
-            } else {
-                server.middleware.before = [<express.RequestHandler>handler].concat(server.middleware.before);
-            }
-
+            Server.api(true, target).middleware(handler, options);
             return target;
         } else {
             // -- Method decorator --
-            let method = Server.method(target, methodName, descriptor.value);
-            
-            // Decorators are called bottom to top so we have to reverse the middleware list
-            method.middleware = [<express.RequestHandler>handler].concat(method.middleware);
-            
+            Server.api(true, target, methodName).middleware(handler as express.RequestHandler);
             return descriptor;
         }
     };
@@ -144,4 +101,11 @@ export namespace middleware {
     export interface Options {
         error?: boolean;
     }
+}
+
+export function api(server: Object): Api.Class;
+export function api(constructor: Function): Api.Class;
+export function api(server: Object, method: string | symbol): Api.Method;
+export function api(target: Object | Function, method?: string | symbol): Api.Class | Api.Method {
+    return Server.api(false, target, method);
 }

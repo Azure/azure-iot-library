@@ -6,24 +6,35 @@ import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
 import * as url from 'url';
 
-import {route, middleware, hal, provides} from '../api';
+import {route, middleware, hal, provides, api} from '../api';
 import {Method, LinkRelation, Hal} from '../types';
 
-// Create a class for testing decorator behavior
-let TestAPIName = 'test';
-let TestAPIDocs = 'http://www.contoso.com/docs/:rel';
-let TestAPITemplate = 'http://www.contoso.com/docs/{rel}';
-@provides(TestAPIName, { href: TestAPIDocs })
-@middleware(function(req: express.Request, response: express.Response, next: express.NextFunction) {
+// Middleware functions
+function first(req: express.Request, response: express.Response, next: express.NextFunction) {
     if (!response.locals.order) {
         response.locals.order = [];
     }
-
-    response.locals.order.push('class');
-    
+    response.locals.order.push('first');
     next();
-})
-@middleware(function(err: any, req: express.Request, response: express.Response, next: express.NextFunction) {
+}
+
+function second(req: express.Request, response: express.Response, next: express.NextFunction) {
+    if (!response.locals.order) {
+        response.locals.order = [];
+    }
+    response.locals.order.push('second');
+    next();
+}
+
+function cls(req: express.Request, response: express.Response, next: express.NextFunction) {
+    if (!response.locals.order) {
+        response.locals.order = [];
+    }
+    response.locals.order.push('class');
+    next();
+}
+
+function err(err: any, req: express.Request, response: express.Response, next: express.NextFunction) {
     if (!response.locals.order) {
         response.locals.order = [];
     }
@@ -36,22 +47,22 @@ let TestAPITemplate = 'http://www.contoso.com/docs/{rel}';
     }
     
     next();
-}, { error: true })
+}
+
+// Create a class for testing decorator behavior
+let TestAPIName = 'test';
+let TestAPIDocs = 'http://www.contoso.com/docs/:rel';
+let TestAPITemplate = 'http://www.contoso.com/docs/{rel}';
+@provides(TestAPIName, { href: TestAPIDocs })
+@middleware(cls)
+@middleware(err, { error: true })
 class TestAPI {
 
-    @route(Method.GET, '/happy')
-    @provides('happy', { discoverable: true })
-    @middleware(function(req: express.Request, response: express.Response, next: express.NextFunction) {
-        if (!response.locals.order) {
-            response.locals.order = [];
-        }
-
-        response.locals.order.push('first');
-        
-        next();
-    })
-    @hal('mixed', 'middleware', 'NoHateoasBehavior', LinkRelation.Index, 'template', 'duplicate', 'query')
-    HappCase(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
+    @route(Method.GET, '/default')
+    @provides('default', { discoverable: true })
+    @middleware(first)
+    @hal('mixed', 'middleware', 'NoHalBehavior', LinkRelation.Index, 'template', 'duplicate', 'query')
+    DefaultCase(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         response.link('extra');
         response.link('override', {
             rel: LinkRelation.Alternate,
@@ -76,63 +87,29 @@ class TestAPI {
     };
 
 
-    @hal('happy')
+    @hal('default')
     @provides('mixed')
     @route(Method.POST, '/mixed')
-    @middleware(function(req: express.Request, response: express.Response, next: express.NextFunction) {
-        if (!response.locals.order) {
-            response.locals.order = [];
-        }
-
-        response.locals.order.push('first');
-        
-        next();
-    })
+    @middleware(first)
     MixedOrderDecorators(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         response.json({});
     };
 
 
-    @hal('happy')
+    @hal('default')
     @provides('middleware')
     @route(Method.PUT, '/middleware')
-    @middleware(function first(req: express.Request, response: express.Response, next: express.NextFunction) {
-        
-        if (!response.locals.order) {
-            response.locals.order = [];
-        }
-
-        response.locals.order.push('first');
-        
-        next();
-    })
-    @middleware(function second(req: express.Request, response: express.Response, next: express.NextFunction) {
-       
-        if (!response.locals.order) {
-            response.locals.order = [];
-        }
-
-        response.locals.order.push('second');
-        
-        next();
-    })
+    @middleware(first)
+    @middleware(second)
     MiddlewareExecutionOrder(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         throw new Error();
     };
     
     
-    @route(Method.DELETE, '/NoHateoasBehavior')
+    @route(Method.DELETE, '/NoHalBehavior')
     @provides()
-    @middleware(function(req: express.Request, response: express.Response, next: express.NextFunction) {
-        if (!response.locals.order) {
-            response.locals.order = [];
-        }
-
-        response.locals.order.push('first');
-        
-        next();
-    })
-    NoHateoasBehavior(req: express.Request, response: express.Response, next: express.NextFunction) {
+    @middleware(first)
+    NoHalBehavior(req: express.Request, response: express.Response, next: express.NextFunction) {
         response.json({});
     };
     
@@ -144,7 +121,7 @@ class TestAPI {
     
     @route(Method.GET, '/extra')
     @provides('extra')
-    @hal('happy')
+    @hal('default')
     Extra(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
         response.json({});
     };
@@ -207,8 +184,14 @@ class AltTestAPI {
     
     @route(Method.GET, '/cross')
     @provides('cross', { discoverable: true })
-    @hal('test:happy')
+    @hal('test:default')
     CrossClassRel(req: express.Request, response: express.Response, next: express.NextFunction) {
+        response.json({});
+    };
+}
+
+class DynamicApi {
+    Handler(req: express.Request, response: express.Response, next: express.NextFunction) {
         response.json({});
     };
 }
@@ -296,7 +279,7 @@ describe('HAL API Tests', () => {
 
 
     it('Should respond with native JSON when no Heatoes behavior defined', done => {
-        call('delete', 'http://localhost/api/test/NoHateoasBehavior', done);
+        call('delete', 'http://localhost/api/test/NoHalBehavior', done);
         
         expect(result).toBeDefined();
         expect(result._links).toBeFalsy();
@@ -306,14 +289,14 @@ describe('HAL API Tests', () => {
     
     
     it('Should return expected HAL result', done => {
-        call('get', 'http://localhost/api/test/happy?test=true', done);
+        call('get', 'http://localhost/api/test/default?test=true', done);
 
         // Test _links
         expect(result).toBeDefined();
         expect(result._links).toBeDefined();
         
         // Test self link
-        expect(single(result._links, 'self').href).toBe('/api/test/happy?test=true');
+        expect(single(result._links, 'self').href).toBe('/api/test/default?test=true');
         
         // Test curies
         testCuries(result, 0, TestAPIName, TestAPITemplate);
@@ -322,7 +305,7 @@ describe('HAL API Tests', () => {
         // Test standard links
         testStandardLink(result, TestAPIName, 'mixed');
         testStandardLink(result, TestAPIName, 'middleware');
-        testStandardLink(result, TestAPIName, 'NoHateoasBehavior');
+        testStandardLink(result, TestAPIName, 'NoHalBehavior');
         
         // Test link-relation links
         expect(single(result._links, 'index').href).toBe('/api/test/index');
@@ -362,7 +345,7 @@ describe('HAL API Tests', () => {
         expect(extraEmbedded['value']).toBe('test');
         expect(extraEmbedded._links).toBeDefined();
         expect(single(extraEmbedded._links, 'self').href).toBe('/api/test/extra');
-        testStandardLink(extraEmbedded, TestAPIName, 'happy');
+        testStandardLink(extraEmbedded, TestAPIName, 'default');
         
         let customEmbedded = single(result._embedded, `${TestAPIName}:custom`);
         expect(customEmbedded).toBeDefined();
@@ -401,7 +384,7 @@ describe('HAL API Tests', () => {
         testCuries(result, 0, TestAPIName, TestAPITemplate);
      
         // Test link
-        testStandardLink(result, TestAPIName, 'happy');
+        testStandardLink(result, TestAPIName, 'default');
  
         done();
     });
@@ -418,7 +401,7 @@ describe('HAL API Tests', () => {
         testCuries(result, 1, AltAPIName, AltAPIDocs);
      
         // Test links
-        testStandardLink(result, TestAPIName, 'happy');
+        testStandardLink(result, TestAPIName, 'default');
         testStandardLink(result, AltAPIName, 'cross');
         
         done();
@@ -439,5 +422,42 @@ describe('HAL API Tests', () => {
     it('Ensure async and query-parameter links are callable', done => {
         request.done = done;
         call('get', 'http://localhost/api/test/query?q=value', done);
+    });
+
+    it('Dynamic decorators function as well as the standard decorators', done => {
+        let dyn = new DynamicApi();
+
+        api(dyn)
+            .provides('dynamic')
+            .middleware(cls);
+        api(dyn, 'Handler')
+            .route('GET', '/handler')
+            .middleware(first)
+            .middleware(second)
+            .hal('test:default');
+
+        router.use('/dynamic', route(dyn));
+
+        call('get', 'http://localhost/api/dynamic/handler', done);
+
+        // Test _links
+        expect(result).toBeDefined();
+        expect(result._links).toBeDefined();
+        
+        // Test self link
+        expect(single(result._links, 'self').href).toBe('/api/dynamic/handler');
+
+        // Test curies
+        testCuries(result, 0, TestAPIName, TestAPITemplate);
+     
+        // Test link
+        testStandardLink(result, TestAPIName, 'default');
+
+        // Test execution order
+        expect(response.locals.order[0]).toEqual('class');
+        expect(response.locals.order[1]).toEqual('first');
+        expect(response.locals.order[2]).toEqual('second');
+
+        done();
     });
 });

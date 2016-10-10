@@ -1,7 +1,7 @@
 {
   "name": "@azure-iot/hal",
   "description": "Decorator library for HAL-based routes",
-  "version": "1.0.0-rc.7",
+  "version": "1.0.0-rc.8",
   "scripts": {
     "prebuild": "npm run lint",
     "build": "tsc",
@@ -26,6 +26,6 @@
   "dependencies": {
     "express": "^4.13.4",
     "halson": "^2.3.1",
-    "path-to-regexp": "^1.2.1"
+    "path-to-regexp": "^1.6.0"
   }
 }
