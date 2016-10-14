@@ -48,4 +48,6 @@ export namespace Arguments {
             options: hal.Options;
         }
     }
+
+    export const Stack = Symbol();
 }

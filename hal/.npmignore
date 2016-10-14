@@ -12,7 +12,8 @@
 *.ts
 !*.d.ts
 lib.d.ts
-ts*.json
+*.json
+!package.json
 
 # Test files
 *.spec.*

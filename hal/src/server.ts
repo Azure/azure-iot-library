@@ -20,46 +20,25 @@ function path(req: express.Request): string {
 }
 
 export class Server {
-    private methods: { [method: string]: Api.Method };
-    private class: Api.Class;
-    private app: express.Application;
-
-    constructor() {
-        this.methods = {};
-        this.class = null;
-        this.app = null;
-    }
-    
-    static instance(target: Object): Server {
-        if (!target[Server.Private]) {
-            target[Server.Private] = new Server();
-        }
-        return target[Server.Private];
-    }
-    
     static api(decorator: boolean, server: Object): Api.Class;
     static api(decorator: boolean, constructor: Function): Api.Class;
     static api(decorator: boolean, server: Object, method: string | symbol): Api.Method;
     static api(decorator: boolean, target: Object | Function, method?: string | symbol): Api.Api {
         let api: Api.Api;
-        if (typeof target === 'function') {
-            if (!target[Server.Private]) {
-                target[Server.Private] = new Api.Class((target as Function).name);
+        if (typeof target === 'function' || !method) {
+            let obj = typeof target === 'function' ? (target as Function).prototype : target;
+            if (!obj.hasOwnProperty(Server.Class)) {
+               obj[Server.Class] = new Api.Class(obj.constructor.name);
             }
-            api = target[Server.Private];
+            api = obj[Server.Class];
         } else {
-            let server = Server.instance(target);
-            if (!method) {
-                if (!server.class) {
-                    server.class = new Api.Class(target.constructor.name);
-                }
-                api = server.class;
-            } else {
-                if (!server.methods[method]) {
-                    server.methods[method] = new Api.Method(method.toString());
-                }
-                api = server.methods[method];
+            if (!target.hasOwnProperty(Server.Methods)) {
+                target[Server.Methods] = {};
             }
+            if (!target[Server.Methods][method]) {
+                target[Server.Methods][method] = new Api.Method(method.toString());
+            }
+            api = target[Server.Methods][method];
         }
         // The decorator parameter needs to be private to the outside world, but we need to modify it here
         (api as any).decorator = decorator;
@@ -89,13 +68,18 @@ export class Server {
         };
     }
 
-    private static register(target: Object, server: Server, method: Arguments.Method, handler: express.RequestHandler) {
+    private static register(server: Object, method: Arguments.Method, app: express.Application, handler: express.RequestHandler) {
         // Merge hal and middleware decorator calls
         const hal = {
-            links: method.hal.reduce((links, hal) => links.concat(hal.links), []) as Rel[],
+            links: new Set(method.hal.reduce((links, hal) => links.concat(hal.links), []) as Rel[]),
             options: method.hal.reduce((options, hal) => Object.assign(options, hal.options), {}) as hal.Options
         };
         const middleware = method.middleware.map(middleware => middleware.handler);
+
+        // If a self rel has been explicitly requested, add it to the links
+        if (hal.options.self) {
+            hal.links.add(LinkRelation.Self);
+        }
 
         // Transform all route verbs into their string equivalents
         const routes = method.route.map(route => ({
@@ -103,34 +87,32 @@ export class Server {
             path: route.path
         }));
 
-        // If this method requires a 'self' rel and does not already have one, add it to the start of its list of rels
-        if ((hal.options.self || (typeof hal.options.self === 'undefined' && routes.find(route => route.verb === 'GET'))) &&
-            hal.links.indexOf(LinkRelation.Self) < 0) {
-            hal.links.unshift(LinkRelation.Self);
-        } 
-
-        // If this is a HAL handler, add middleware that will transmute the response object into a HAL response
-        if (method.hal.length > 0) {
-            middleware.push((req: express.Request, res: express.Response, next: express.NextFunction) =>
-                Response.create(target, path(req), hal.links, req, res) && next());
-        }
-
         for (let route of routes) {
-            if (server.app[route.verb.toLowerCase()]) {
-                // If this route provides rels, map them for quick access
+            if (app[route.verb.toLowerCase()]) {
+                // If this route requires an automatic default 'self' rel, add it
+                const links = Array.from(typeof hal.options.self === 'undefined' && route.verb === 'GET' ?
+                    (new Set(hal.links)).add(LinkRelation.Self) : hal.links);
+
+                // If this method provides rels, map them for quick access
                 for (let provides of method.provides) {
                     let template = Template.apply(route.path, provides.options.params);
-                    Linker.registerLink(target, provides.rel, template, Object.assign({
+                    Linker.registerLink(server, provides.rel, template, Object.assign({
+                        verb: route.verb,
                         href: route.path,
-                        links: hal.links,
-                        verb: route.verb
+                        links
                     }, provides.options));
                 }
+
+                // If this is a HAL handler, add middleware that will transmute the response object into a HAL response
+                // (with the current links for this route)
+                const handlers = method.hal.length === 0 ? middleware : middleware.concat(
+                    (req: express.Request, res: express.Response, next: express.NextFunction) =>
+                        Response.create(server, path(req), links, req, res) && next());
                 
                 // Reduce the full route to its path portion; HAL supports templated query parameters,
                 // but Express does not
-                server.app[route.verb.toLowerCase()].call(server.app,
-                    url.parse(route.path).pathname, middleware, handler);
+                app[route.verb.toLowerCase()].call(app,
+                    url.parse(route.path).pathname, handlers, handler);
             } else {
                 console.error(`${route.verb} is not a valid HTTP method.`);
             }
@@ -138,86 +120,91 @@ export class Server {
     }
 
     // Merge class and instance decorators
-    private static proto(target: Object): Arguments.Class {
-        const defaults: Arguments.Class = { provides: [], middleware: [] };
-        const instance: Arguments.Class = target[Server.Private].class ? target[Server.Private].class[Server.Private] : defaults;
-        const prototype: Arguments.Class = target.constructor[Server.Private] ? target.constructor[Server.Private][Server.Private] : defaults;
-        return {
-            provides: prototype.provides.concat(instance.provides),
-            middleware: prototype.middleware.concat(instance.middleware)
-        };
-    }
-    
-    static route(target: Object): express.Application {
-        let server = Server.instance(target);
-        
-        if (!server.app) {
-            server.app = express();
+    private static proto(target: Object): Arguments.Class & { methods: { [method: string]: Api.Method } } {
+        let proto: Arguments.Class & { methods: { [method: string]: Api.Method } } = { provides: [], middleware: [], methods: {} };
 
-            const proto: Arguments.Class = Server.proto(target);
+        // Walk down the prototype chain and merge class decorators
+        let prototype = target;
+        while (prototype) {
+            if (prototype.hasOwnProperty(Server.Class)) {
+                proto.provides = proto.provides.concat(prototype[Server.Class][Arguments.Stack].provides);
+                proto.middleware = proto.middleware.concat(prototype[Server.Class][Arguments.Stack].middleware);
+            }
+            if (prototype.hasOwnProperty(Server.Methods)) {
+                proto.methods = Object.assign({}, prototype[Server.Methods], proto.methods);
+            }
+            prototype = Object.getPrototypeOf(prototype);
+        }
+
+        return proto;
+    }
+
+    static route(server: Object): express.Application {
+        if (!server[Server.App]) {
+            let app = server[Server.App] = express();
+
+            const proto = Server.proto(server);
 
             // Resolve a default namespace if none was specified
             if (proto.provides.length === 0) {
-                proto.provides.push({ namespace: target.constructor.name, options: {} });
+                proto.provides.push({ namespace: server.constructor.name, options: {} });
             }
 
             // Resolve namespace documentation
             for (let provides of proto.provides) {
                 const href = provides.options.href || `/docs/${provides.namespace}/:rel`;
 
-                Linker.registerDocs(target, provides.namespace, href);
+                Linker.registerDocs(server, provides.namespace, href);
 
                 // Register automatically-generated documentation
                 if ((typeof provides.options.auto === 'undefined' && typeof provides.options.href === 'undefined') || provides.options.auto) {
-                    server.app.get(href, Server.autodoc(provides.namespace));
+                    app.get(href, Server.autodoc(provides.namespace));
                 }
             }
 
             // Resolve server-wide middleware
             for (let middleware of proto.middleware.filter(middleware => !middleware.options.error)) {
-                server.app.use(middleware.handler);
+                app.use(middleware.handler);
             }
 
             // Resolve individual routes
-            for (let methodName in server.methods) {
-                Server.register(target, server, server.methods[methodName][Server.Private],
+            for (let methodName in proto.methods) {
+                Server.register(server, proto.methods[methodName][Arguments.Stack], app,
 
                     // Bind the handler in a promise; Express does not use the return values of its handlers, 
                     // and this allows us to properly catch error results from async methods
                     (req: express.Request, res: express.Response, next: express.NextFunction) =>
-                        Promise.resolve(target[methodName](req, res, next)).catch(next)
+                        Promise.resolve(server[methodName](req, res, next)).catch(next)
                 );
             }
             
             // Resolve server-wide error-handling middleware
             for (let middleware of proto.middleware.filter(middleware => middleware.options.error)) {
-                server.app.use(middleware.handler);
+                app.use(middleware.handler);
             }
 
             // Ensure proper relative href resolution
-            Linker.setDocsCallback(target, docs => {
-                docs.href = relative(server.app, docs.href);
+            Linker.setDocsCallback(server, docs => {
+                docs.href = relative(app, docs.href);
                 return docs;
             });
-            Linker.setLinkCallback(target, link => {
-                link.href = relative(server.app, link.href);
+            Linker.setLinkCallback(server, link => {
+                link.href = relative(app, link.href);
                 return link;
             });
         }
         
-        return server.app;
+        return server[Server.App];
     }
     
     static discovery(req: express.Request, res: express.Response, next: express.NextFunction) {
         const hal = Response.create(null, path(req), [], req, res);
         for (let server of Linker.servers()) {
-            const internal = server[Server.Private];
-            if (internal) {
-                for (let methodName in internal.methods) {
-                    for (let provides of internal.methods[methodName][Server.Private].provides) {
-                        if (provides.options.discoverable) {
-                            hal.link(provides.rel, { server });
-                        }
+            const proto = Server.proto(server);
+            for (let methodName in proto.methods) {
+                for (let provides of proto.methods[methodName][Arguments.Stack].provides) {
+                    if (provides.options.discoverable) {
+                        hal.link(provides.rel, { server });
                     }
                 }
             }
@@ -231,5 +218,7 @@ export namespace Server {
         verb?: string;
     }
 
-    export const Private = Symbol();
+    export const App = Symbol();
+    export const Class = Symbol();
+    export const Methods = Symbol();
 }

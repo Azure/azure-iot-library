@@ -10,18 +10,18 @@ import {Arguments} from './arguments';
 // Decorators are called in reverse order, whereas methods are called in the expected order;
 // adding to the decorator callstack should compensate accordingly
 function add<T>(obj: any, collection: string, value: T) {
-    obj[Server.Private][collection][obj.decorator ? 'unshift' : 'push'](value);
+    obj[Arguments.Stack][collection][obj.decorator ? 'unshift' : 'push'](value);
 }
 
 export namespace Api {
     export class Api {
-        constructor(protected name: string, protected decorator: boolean = true) {}
+        constructor(protected name: string, protected decorator: boolean = false) {}
     }
 
     export class Class extends Api {
         constructor(name: string, decorator?: boolean) {
             super(name, decorator);
-            this[Server.Private] = {
+            this[Arguments.Stack] = {
                 provides: [],
                 middleware: []
             } as Arguments.Class;
@@ -41,7 +41,7 @@ export namespace Api {
     export class Method extends Api {
         constructor(name: string, decorator?: boolean) {
             super(name, decorator);
-            this[Server.Private] = {
+            this[Arguments.Stack] = {
                 route: [],
                 provides: [],
                 middleware: [],
