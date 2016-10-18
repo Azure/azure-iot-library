@@ -101,7 +101,7 @@ export class Configuration implements IConfiguration {
 
         // Optionally add mongo provider
         let requiredKeys: string[] = this.updatedRequiredKeys(params.requiredKeys);
-        if (mongoUri === null) {
+        if (!mongoUri) {
             params.logger(noMongoUriMsg);
             if (requiredKeys.length > 0) {
                 throw new Error(`${requiredKeysErrMsg}: ${requiredKeys}`);

@@ -3,6 +3,7 @@
 import {MongoClient, Db, Collection} from 'mongodb';
 import {IConfiguration} from './IConfiguration';
 import {getVal} from './getVal';
+import * as url from 'url';
 
 const timeoutSeconds: number = 8;
 const connectionSuccessMsg: string = 'Connected to configuration database';
@@ -72,13 +73,22 @@ export class MongoConfiguration implements IConfiguration {
     }
 
     private async initializeDb(): Promise<void> {
+        // first check if the mongo connection string can be constructed:
+        let mongoUriStr;
+        try {
+            const mongoUri = url.parse(this.params.mongoUri);
+            mongoUri.pathname = this.params.dbName;
+            mongoUriStr = url.format(mongoUri);
+        } catch (err) {
+            throw new Error(`Unable to construct mongo connection string (mongoUri: ${this.params.mongoUri}; db: ${this.params.dbName}; coll: ${this.params.collectionName}): ${err}`);
+        }
+
         while (true) {
             let db: Db;
             try {
                 // Establish a connection
                 db = await new Promise<Db>( (resolve, reject) => {
-                    const mongoUri: string = `${this.params.mongoUri}/${this.params.dbName}`;
-                    MongoClient.connect(mongoUri, (err, database) => {
+                    MongoClient.connect(mongoUriStr, (err, database) => {
                         err ? reject(err) : resolve(database);
                     });
                 });
@@ -99,7 +109,7 @@ export class MongoConfiguration implements IConfiguration {
                 // Wait before retrying connection
                 this.params.secondsToRetry -= timeoutSeconds;
                 this.params.secondsToRetry = Math.max(this.params.secondsToRetry, 0);
-                this.params.logger(`Waiting for mongo provider - ${this.params.secondsToRetry} seconds left`);
+                this.params.logger(`Waiting for mongo provider - ${this.params.secondsToRetry} seconds left. Error: ${err}`);
                 if (this.params.secondsToRetry <= 0) {
                     db.close();
                     throw err;
