@@ -6,40 +6,40 @@ import {route, middleware, hal, provides, api} from '../api';
 import {Method, LinkRelation, Hal} from '../types';
 
 // Middleware functions
-function first(req: express.Request, response: express.Response, next: express.NextFunction) {
-    if (!response.locals.order) {
-        response.locals.order = [];
+function first(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (!res.locals.order) {
+        res.locals.order = [];
     }
-    response.locals.order.push('first');
+    res.locals.order.push('first');
     next();
 }
 
-function second(req: express.Request, response: express.Response, next: express.NextFunction) {
-    if (!response.locals.order) {
-        response.locals.order = [];
+function second(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (!res.locals.order) {
+        res.locals.order = [];
     }
-    response.locals.order.push('second');
+    res.locals.order.push('second');
     next();
 }
 
-function cls(req: express.Request, response: express.Response, next: express.NextFunction) {
-    if (!response.locals.order) {
-        response.locals.order = [];
+function cls(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (!res.locals.order) {
+        res.locals.order = [];
     }
-    response.locals.order.push('class');
+    res.locals.order.push('class');
     next();
 }
 
-function err(err: any, req: express.Request, response: express.Response, next: express.NextFunction) {
-    if (!response.locals.order) {
-        response.locals.order = [];
+function err(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (!res.locals.order) {
+        res.locals.order = [];
     }
 
-    response.locals.order.push('error');
+    res.locals.order.push('error');
 
     // If we're in the async case, make sure we call done *after* we've hit the error handler
-    if ((<any>req).done) {
-        (<any>req).done();
+    if ((req as any).done) {
+        (req as any).done();
     }
     
     next();
@@ -57,119 +57,125 @@ class TestApi {
     @route(Method.GET, '/default')
     @provides('default', { discoverable: true })
     @middleware(first)
-    @hal('mixed', 'middleware', 'NoHalBehavior', LinkRelation.Index, 'template', 'duplicate', 'query')
-    DefaultCase(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
-        response.link('extra');
-        response.link('override', {
+    @hal('mixed', 'middleware', 'NoHalBehavior', LinkRelation.Index, 'template', 'duplicate')
+    DefaultCase(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+        res.link('extra');
+        res.link('override', {
             rel: LinkRelation.Alternate,
             array: true
         });
-        response.link('custom', {
+        res.link('custom', {
             href: 'http://www.contoso.com'
         });
-        response.link('template', {
+        res.link('template', {
             params: { id: 'name' }
         });
-        response.embed('extra', { value: 'test' });
-        response.embed('custom', { value: 'test' }, { links: ['override'] });
-        response.embed('parent', { value: 'parent' }).embed('child', { value: 'child' });
+        res.link('query', {
+            params: { value: 0 }
+        });
+        res.embed('extra', { value: 'test' });
+        res.embed('custom', { value: 'test' }, { links: ['override'] });
+        res.embed('parent', { value: 'parent' }).embed('child', { value: 'child' });
         
-        response.json({
+        res.json({
             simple: 'simple',
             complex: {
                 value: 'value'
             }
         });
-    };
-
+    }
 
     @hal('default')
     @provides('mixed')
     @route(Method.POST, '/mixed')
     @middleware(first)
-    MixedOrderDecorators(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
-        response.json({});
-    };
-
+    MixedOrderDecorators(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+        res.json({});
+    }
 
     @hal('default')
     @provides('middleware')
     @route(Method.PUT, '/middleware')
     @middleware(first)
     @middleware(second)
-    MiddlewareExecutionOrder(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
+    MiddlewareExecutionOrder(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         throw new Error();
-    };
-    
+    }
     
     @route(Method.DELETE, '/NoHalBehavior')
     @provides()
     @middleware(first)
-    NoHalBehavior(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    NoHalBehavior(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.GET, '/index')
     @provides(LinkRelation.Index)
-    DefaultRel(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    DefaultRel(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.GET, '/extra')
     @provides('extra')
     @hal('default')
-    Extra(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    Extra(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.GET, '/override')
     @provides('override')
-    Override(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    Override(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.GET, '/template/:id')
     @provides('template', { id: 'id' })
-    Template(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    Template(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.GET, '/duplicate')
     @provides('duplicate')
-    DuplicateGet(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    DuplicateGet(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.PUT, '/duplicate')
     @provides('duplicate')
-    DuplicatePut(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    DuplicatePut(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.GET, '/distinct')
     @provides('duplicate')
-    DuplicateDistinct(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    DuplicateDistinct(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
     
     @route(Method.GET, '/fallthrough/:id')
     @hal('template', { self: false })
-    ParameterFallthrough(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
-        response.json({});
+    ParameterFallthrough(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+        res.json({});
     }
 
     @route(Method.GET, '/child')
     @provides('child')
     @hal('alt:cross')
-    Child(req: express.Request, response: express.Response & hal.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    Child(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+        res.json({});
+    }
 
-    @route('GET', '/query?q=:value')
+    @route('GET', '/query/{param}?q={value}')
     @provides('query')
-    AsyncQuery(req: express.Request, response: express.Response, next: express.NextFunction) {
+    AsyncQuery(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.locals.param = req.params.param;
         return Promise.reject(new Error());
-    };
+    }
+
+    @route('GET', '/optional/:value?')
+    Optional(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json(req.params);
+    }
 };
 
 let AltApiName = 'alt';
@@ -181,9 +187,9 @@ class AltApi {
     @route(Method.GET, '/cross')
     @provides('cross', { discoverable: true })
     @hal('test:default')
-    CrossClassRel(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    CrossClassRel(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
 }
 
 let ParentApiName = 'parent';
@@ -192,15 +198,15 @@ let ParentApiDocs = `/docs/${ParentApiName}/{rel}`;
 class ParentApi {}
 
 class DynamicApi extends ParentApi {
-    Handler(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    Handler(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
 
     @route(Method.GET, '/inherited')
     @provides('inherited')
-    Inherited(req: express.Request, response: express.Response, next: express.NextFunction) {
-        response.json({});
-    };
+    Inherited(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
 }
 
 describe('HAL API Tests', () => {
@@ -325,9 +331,9 @@ describe('HAL API Tests', () => {
         expect(templates[1].href).toBe('/api/test/template/name');
         expect(templates[1].name).toBe('name');
 
-        // Test query-templated links
+        // Test query- and URI-templated links
         let query = single(result._links, `${TestApiName}:query`);
-        expect(query.href).toBe('/api/test/query?q={value}');
+        expect(query.href).toBe('/api/test/query/{param}?q=0');
         expect(query.templated).toBe(true);
         
         // Test duplicate links
@@ -426,9 +432,28 @@ describe('HAL API Tests', () => {
         done();
     });
 
-    it('Ensure async and query-parameter links are callable', done => {
-        request.done = done;
-        call('get', 'http://localhost/api/test/query?q=value', done);
+    it('Ensure async, query-parameter, and URI-templated routes are callable', done => {
+        request.done = (error: any) => {
+            if (!error) {
+                expect(response.locals.param).toBe('param');
+            }
+            done(error);
+        };
+        call('get', 'http://localhost/api/test/query/param?q=value', done);
+    });
+
+    it('Ensure optional routes are callable in both forms', done => {
+        call('get', 'http://localhost/api/test/optional', done);
+
+        expect(result).toBeDefined();
+        expect((result as any).value).toBeUndefined();
+
+        call('get', 'http://localhost/api/test/optional/value', done);
+
+        expect(result).toBeDefined();
+        expect((result as any).value).toBe('value');
+
+        done();
     });
 
     it('Dynamic decorators function as well as the standard decorators', done => {

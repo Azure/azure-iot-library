@@ -95,7 +95,7 @@ export class Server {
 
                 // If this method provides rels, map them for quick access
                 for (let provides of method.provides) {
-                    let template = Template.apply(route.path, provides.options.params);
+                    let template = Template.apply(route.path, provides.options.params || {});
                     Linker.registerLink(server, provides.rel, template, Object.assign({
                         verb: route.verb,
                         href: route.path,
@@ -109,10 +109,10 @@ export class Server {
                     (req: express.Request, res: express.Response, next: express.NextFunction) =>
                         Response.create(server, path(req), links, req, res) && next());
                 
-                // Reduce the full route to its path portion; HAL supports templated query parameters,
-                // but Express does not
-                app[route.verb.toLowerCase()].call(app,
-                    url.parse(route.path).pathname, handlers, handler);
+                // If this is a URI template, convert it to an Express route
+                const uri = Template.is(route.path) ? Template.express(route.path) : route.path; 
+
+                app[route.verb.toLowerCase()].call(app, uri, handlers, handler);
             } else {
                 console.error(`${route.verb} is not a valid HTTP method.`);
             }

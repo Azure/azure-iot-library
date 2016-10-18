@@ -32,7 +32,7 @@ Indicates Express-style middleware to use with this server; it can be used multi
 #### `@route(method, path)`
 Indicates that the following method provides an Express or HAL route handler.
 * `method` [string | Method]: The HTTP method from the `Method` enum or as a string.
-* `path` [string]: The route path for this handler.
+* `path` [string]: The route path for this handler. Express-style paths and level-1 URI templated paths (as per [RFC 6570](https://tools.ietf.org/html/rfc6570)) are supported.
 
 #### `@provides(rel, [options])`
 Indicates a rel this handler provides; it can be used multiple times, and omitting it will prevent HAL responses from automatically linking to this route's path.
