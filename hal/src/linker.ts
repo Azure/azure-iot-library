@@ -7,25 +7,32 @@ function first<T>(items: Object[], property: string): T {
 }
 
 export class Linker {
-    private static map: { [name: string]: Object } = {};
+    private static map: { [name: string]: Object[] } = {};
 
     private static parse<T>(
-        server: Object,
+        base: Object,
         rel: Rel,
         callback: (server: Object, parsed: string, ns: string) => T
     ): T {
         if (typeof rel === 'string') {
             const parts = rel.split(':');
+
+            // If the rel is not namespaced, assume it shares the namespace of this server (if one was provided)
             if (parts.length === 1) {
-                // If the rel is not namespaced, assume it is owned by this server (if one was provided)
-                return callback(server, (server && Data.from(server).name ? Data.from(server).name + ':' : '') + parts[0], '');
+                parts.unshift(base && Data.from(base).name);
+            }
+
+            if (parts[0]) {
+                // If the rel is namespaced, find the associated server class that provides this namespace and rel
+                const server = Linker.map[parts[0]] && Linker.map[parts[0]].find(server => !!Data.from(server).links[parts.join(':')]);
+                return callback(server || base, parts.join(':'), parts[0]);
             } else {
-                // If it is namespaced, find the associated server class
-                return callback(Linker.map[parts[0]] || server, rel, parts[0]);
+                // Fall back to the provided server
+                return callback(base, parts[1], '');
             }
         } else {
             // Default relations cannot be cross-class, because they are not namespaced
-            return callback(server, LinkRelation[rel], null);
+            return callback(base, LinkRelation[rel], null);
         }
     }
     
@@ -86,7 +93,8 @@ export class Linker {
         Data.initialize(base, name).docs[name] = { name, href };
 
         // Record this name for cross-class rel linking
-        Linker.map[name] = base;
+        Linker.map[name] = Linker.map[name] || [];
+        Linker.map[name].push(base);
     }
 
     static registerLink(base: Object, rel: Rel, href: string, overrides: hal.Overrides = {}) {
@@ -111,7 +119,7 @@ export class Linker {
     }
 
     static servers(): Object[] {
-        return Array.from(new Set(Object.keys(Linker.map).map(name => Linker.map[name])));
+        return Array.from(new Set(Object.keys(Linker.map).reduce((all, name) => all.concat(Linker.map[name]), [])));
     }
 }
 

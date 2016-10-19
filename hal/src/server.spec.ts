@@ -57,7 +57,7 @@ class TestApi {
     @route(Method.GET, '/default')
     @provides('default', { discoverable: true })
     @middleware(first)
-    @hal('mixed', 'middleware', 'NoHalBehavior', LinkRelation.Index, 'template', 'duplicate')
+    @hal('mixed', 'middleware', 'NoHalBehavior', LinkRelation.Index, 'template', 'duplicate', 'extended')
     DefaultCase(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         res.link('extra');
         res.link('override', {
@@ -178,6 +178,15 @@ class TestApi {
     }
 };
 
+@provides(TestApiName, { href: TestApiDocs })
+class ExtendedApi {
+    @route(Method.GET, '/extended')
+    @provides('extended')
+    Extended(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+        res.json({});
+    }
+}
+
 let AltApiName = 'alt';
 let AltApiDocs = 'http://www.adatum.com/docs/{rel}';
 @provides(AltApiName, { href: AltApiDocs })
@@ -211,7 +220,13 @@ class DynamicApi extends ParentApi {
 
 describe('HAL API Tests', () => {
 
-    let testAPI: TestApi;
+    let server = {
+        test: new TestApi(),
+        extended: new ExtendedApi(),
+        alt: new AltApi(),
+        parent: new ParentApi(),
+        dynamic: new DynamicApi()
+    };
     let response: any;
     let request: any;
     let result: Hal.Resource;
@@ -268,10 +283,11 @@ describe('HAL API Tests', () => {
         };
         response.setHeader = () => {};
         response.type = () => {};
-        
+
         router = express();
-        router.use('/test', route(new TestApi()));
-        router.use('/alt', route(new AltApi()));
+        router.use('/test', route(server.test));
+        router.use('/alt', route(server.alt));
+        router.use('/extended', route(server.extended));
 
         router.get('/', hal.discovery);
         
@@ -290,7 +306,6 @@ describe('HAL API Tests', () => {
         done();
     });
 
-
     it('Should respond with native JSON when no Heatoes behavior defined', done => {
         call('delete', 'http://localhost/api/test/NoHalBehavior', done);
         
@@ -299,7 +314,6 @@ describe('HAL API Tests', () => {
         
         done();
     });
-    
     
     it('Should return expected HAL result', done => {
         call('get', 'http://localhost/api/test/default?test=true', done);
@@ -349,6 +363,9 @@ describe('HAL API Tests', () => {
         let alternates = array(result._links, 'alternate');
         expect(alternates.length).toBe(1);
         expect(alternates[0].href).toBe('/api/test/override');
+
+        // Test shared-namespace links
+        expect(single(result._links, `${TestApiName}:extended`).href).toBe('/api/extended/extended');
         
         // Test embedded objects
         expect(result._embedded).toBeDefined();
@@ -389,7 +406,6 @@ describe('HAL API Tests', () => {
         done();
     });
     
-
     it('Cross-class rels should link properly', done => {
         call('get', 'http://localhost/api/alt/cross', done);
         
@@ -457,17 +473,15 @@ describe('HAL API Tests', () => {
     });
 
     it('Dynamic decorators function as well as the standard decorators', done => {
-        let dyn = new DynamicApi();
-
-        api(dyn)
+        api(server.dynamic)
             .middleware(cls);
-        api(dyn, 'Handler')
+        api(server.dynamic, 'Handler')
             .route('GET', '/handler')
             .middleware(first)
             .middleware(second)
             .hal('test:default', 'parent:inherited');
 
-        router.use('/dynamic', route(dyn));
+        router.use('/dynamic', route(server.dynamic));
 
         call('get', 'http://localhost/api/dynamic/handler', done);
 
