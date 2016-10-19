@@ -93,6 +93,10 @@ export enum LinkRelation {
 
 export type Rel = string | LinkRelation;
 
+export namespace Rel {
+    export const Param = 'rel';
+}
+
 export namespace Hal {
     export interface Link {
         href: string;

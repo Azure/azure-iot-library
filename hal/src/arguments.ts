@@ -19,7 +19,7 @@ export namespace Arguments {
             options: provides.Options.Namespace;
         }
         export interface Middleware {
-            handler: express.RequestHandler | express.ErrorRequestHandler;
+            handler: express.RequestHandler | express.ErrorHandler;
             options: middleware.Options;
         }
     }

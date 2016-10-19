@@ -83,7 +83,7 @@ export function route(first: Verb | Object, second?: string): express.Applicatio
     }
 }
 
-export function middleware(handler: express.RequestHandler | express.ErrorRequestHandler, options?: middleware.Options): ClassDecorator & MethodDecorator {
+export function middleware(handler: express.RequestHandler | express.ErrorHandler, options?: middleware.Options): ClassDecorator & MethodDecorator {
     return function (target: Function | Object, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --

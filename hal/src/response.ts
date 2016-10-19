@@ -63,7 +63,7 @@ export class Response implements hal.Response {
         }
     }
 
-    json(original: express.Send, data: any): express.Response {
+    json(original: (obj: any) => express.Response, data: any): express.Response {
         ensureArray(_private(this).hal._links, CURIES, true);
 
         // This method will be bound to an (express.Response & hal.Response) object;
@@ -144,10 +144,14 @@ export class Response implements hal.Response {
     docs(name: string, href: string) {
         // Add the curie shorthand to the root object if it's not already present
         if (!_private(_private(this).root).hal.getLink(CURIES, (link: Hal.Link) => link.name === name)) {
+            // Remove the well-known rel parameter, so that it remains templated
+            let params = Object.assign({}, _private(this).params);
+            delete params[Rel.Param];
+
             _private(_private(this).root).hal.addLink(CURIES, Template.link({
                 href: href,
                 id: name,
-                params: {}
+                params
             }));
         }
     }

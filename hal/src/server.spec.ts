@@ -168,7 +168,7 @@ class TestApi {
     @route('GET', '/query/{param}?q={value}')
     @provides('query')
     AsyncQuery(req: express.Request, res: express.Response, next: express.NextFunction) {
-        res.locals.param = req.params.param;
+        res.locals.param = req.params['param'];
         return Promise.reject(new Error());
     }
 

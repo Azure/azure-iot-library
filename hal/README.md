@@ -18,7 +18,7 @@ Clone and run `npm install`.
 Associates a HAL namespace and documentation with this server class. It can be used multiple times; the first namespace provided will be treated as the default namespace for any non-namespaced rels used within this server.
 * `ns` [string]: The namespace's name.
 * `options` [provides.Options.Namespace] *(optional)*:
-    * `href` [string]: The documentation link representing this namespace; this contains the placeholder 'rel' for the rels provided by the routes of this server, as per the HAL spec. It can accept either URI-template or Express syntax, though the latter is required for automated documentation. Default is '/docs/&lt;namespace&gt;/:rel'.
+    * `href` [string]: The documentation link representing this namespace; this contains the placeholder 'rel' for the rels provided by the routes of this server, as per the HAL spec. It can accept either URI-template or Express syntax, as per the `@route` decorator. Default is '/docs/&lt;namespace&gt;/:rel'.
     * `auto` [boolean]: Indicates whether to automatically generate documentation from the `description` attributes, described below; default is false if `href` is specified, true otherwise.
 
 #### `@middleware(handler, [options])`

@@ -47,11 +47,11 @@ export class Server {
     
     private static autodoc(ns: string): express.RequestHandler {
         return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-            if (!req.params.rel) {
+            if (!req.params[Rel.Param]) {
                 res.sendStatus(404);
             }
             let doc = '';
-            Linker.handle(null, ns + ':' + req.params.rel, (server: Object, route: string, links: Server.Link[]) => {
+            Linker.handle(null, ns + ':' + req.params[Rel.Param], (server: Object, route: string, links: Server.Link[]) => {
                 doc += `<h1>${route}</h1>`;
                 links.forEach(link => {
                     if (link.description) {
@@ -109,10 +109,7 @@ export class Server {
                     (req: express.Request, res: express.Response, next: express.NextFunction) =>
                         Response.create(server, path(req), links, req, res) && next());
                 
-                // If this is a URI template, convert it to an Express route
-                const uri = Template.is(route.path) ? Template.express(route.path) : route.path; 
-
-                app[route.verb.toLowerCase()].call(app, uri, handlers, handler);
+                app[route.verb.toLowerCase()].call(app, Template.express(route.path), handlers, handler);
             } else {
                 console.error(`${route.verb} is not a valid HTTP method.`);
             }
@@ -152,13 +149,13 @@ export class Server {
 
             // Resolve namespace documentation
             for (let provides of proto.provides) {
-                const href = provides.options.href || `/docs/${provides.namespace}/:rel`;
+                const href = provides.options.href || `/docs/${provides.namespace}/:${Rel.Param}`;
 
                 Linker.registerDocs(server, provides.namespace, href);
 
                 // Register automatically-generated documentation
                 if ((typeof provides.options.auto === 'undefined' && typeof provides.options.href === 'undefined') || provides.options.auto) {
-                    app.get(href, Server.autodoc(provides.namespace));
+                    app.get(Template.express(href), Server.autodoc(provides.namespace));
                 }
             }
 

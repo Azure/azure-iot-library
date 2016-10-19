@@ -32,7 +32,7 @@ export namespace Api {
             return this;
         }
 
-        middleware(handler: express.RequestHandler | express.ErrorRequestHandler, options: middleware.Options = {}): this {
+        middleware(handler: express.RequestHandler | express.ErrorHandler, options: middleware.Options = {}): this {
             add<Arguments.Class.Middleware>(this, 'middleware', { handler, options });
             return this;
         }
