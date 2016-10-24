@@ -2,6 +2,7 @@
 
 import * as express from 'express';
 import * as url from 'url';
+import * as mustache from 'mustache';
 
 import {LinkRelation, Rel, Method} from './constants';
 import {Response} from './response';
@@ -20,6 +21,9 @@ function relative(app: express.Application, href: string): string {
 function path(req: express.Request): string {
     return url.parse(req.originalUrl).path!;
 }
+
+// Default template for automatic documentation
+const template = '{{#routes}}<h1>{{href}}</h1>{{#methods}}<h2>{{verb}}</h2><p>{{options.description}}</p>{{/methods}}{{/routes}}';
 
 // Provides functionality for embedding HAL server data in a given server object
 export class Server {
@@ -50,29 +54,26 @@ export class Server {
     }
     
     // Generate an automated documentation Express handler for the given namespace
-    private static autodoc(ns: string): express.RequestHandler {
+    private static autodoc(app: express.Application, ns: string, template: string): express.RequestHandler {
         return (req: express.Request, res: express.Response, next: express.NextFunction) => {
             // If a rel was not provided, this is not a valid documentation call
-            if (!req.params[Rel.Param]) {
+            const rel = req.params[Rel.Param];
+            if (!rel) {
                 res.sendStatus(404);
             }
 
-            // For each possible route in the resolved rel, display the route, all available verbs,
-            // and the given description for each verb (if available)
-            let doc = '';
-            Server.linker.handle({}, ns + ':' + req.params[Rel.Param], (server: Object, route: string, links: Server.Link[]) => {
-                doc += `<h1>${route}</h1>`;
-                links.forEach(link => {
-                    if (link.description) {
-                        doc += `<h2>${link.verb}</h2>`;
-                        doc += `<p>${link.description}</p>`;
-                    }
-                });
-            });
+            // For each possible route in the resolved rel, format the route and all available methods
+            const routes = Server.linker.handle({}, ns + ':' + rel, (server: Object, route: string, links: Server.Link[]) => ({
+                href: relative(app, route),
+                methods: links.map(link => ({
+                    verb: link.verb,
+                    options: link
+                }))
+            }));
 
-            // If nothing was found (even routes), assume this was not a valid rel
-            if (doc) {
-                res.status(200).send(doc);
+            // If no routes were found, assume this was not a valid rel
+            if (routes.length > 0) {
+                res.status(200).send(mustache.render(template, { ns, rel, routes }));
             } else {
                 res.sendStatus(404);
             }
@@ -170,7 +171,7 @@ export class Server {
 
                 // Register automatically-generated documentation
                 if ((typeof provides.options.auto === 'undefined' && typeof provides.options.href === 'undefined') || provides.options.auto) {
-                    app.get(Template.express(href), Server.autodoc(provides.namespace));
+                    app.get(Template.express(href), Server.autodoc(app, provides.namespace, provides.options.template || template));
                 }
             }
 

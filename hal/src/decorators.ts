@@ -34,6 +34,7 @@ export namespace provides {
         export interface Namespace {
             href?: string;
             auto?: boolean;
+            template?: string;
         };
     }
 }

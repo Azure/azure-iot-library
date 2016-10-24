@@ -203,6 +203,7 @@ class AltApi {
 
 let ParentApiName = 'parent';
 let ParentApiDocs = `/docs/${ParentApiName}/{rel}`;
+let AutoDocDescription = 'A description for automatic documentation.';
 @provides(ParentApiName)
 class ParentApi {}
 
@@ -212,7 +213,7 @@ class DynamicApi extends ParentApi {
     }
 
     @route(Method.GET, '/inherited')
-    @provides('inherited')
+    @provides('inherited', { description: AutoDocDescription })
     Inherited(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
@@ -280,9 +281,15 @@ describe('HAL API Tests', () => {
         response.locals = {};
         response.json = (body: any) => {
             result = body;
+            return response;
         };
-        response.setHeader = () => {};
-        response.type = () => {};
+        response.setHeader = () => response;
+        response.type = () => response;
+        response.status = () => response;
+        response.send = (body: any) => {
+            result = body;
+            return response;
+        };
 
         router = express();
         router.use('/test', route(server.test));
@@ -298,10 +305,10 @@ describe('HAL API Tests', () => {
     it('Should execute middleware in listed order', done => {
         call('put', 'http://localhost/api/test/middleware', done);
      
-        expect(response.locals.order[0]).toEqual('class');
-        expect(response.locals.order[1]).toEqual('first');
-        expect(response.locals.order[2]).toEqual('second');
-        expect(response.locals.order[3]).toEqual('error');
+        expect(response.locals.order[0]).toBe('class');
+        expect(response.locals.order[1]).toBe('first');
+        expect(response.locals.order[2]).toBe('second');
+        expect(response.locals.order[3]).toBe('error');
  
         done();
     });
@@ -503,9 +510,20 @@ describe('HAL API Tests', () => {
         expect(single(result._links, `${ParentApiName}:inherited`).href).toBe('/api/dynamic/inherited');
 
         // Test execution order
-        expect(response.locals.order[0]).toEqual('class');
-        expect(response.locals.order[1]).toEqual('first');
-        expect(response.locals.order[2]).toEqual('second');
+        expect(response.locals.order[0]).toBe('class');
+        expect(response.locals.order[1]).toBe('first');
+        expect(response.locals.order[2]).toBe('second');
+
+        done();
+    });
+
+    it('Automatic documentation works as expected', done => {
+        router.use('/dynamic', route(server.dynamic));
+
+        call('get', `http://localhost/api/dynamic/docs/${ParentApiName}/inherited`, done);
+
+        // Test basic automatic documentation
+        expect((result as string).replace(/&#x2F;/g, '/')).toBe(`<h1>/api/dynamic/inherited</h1><h2>GET</h2><p>${AutoDocDescription}</p>`);
 
         done();
     });
