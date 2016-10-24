@@ -86,10 +86,9 @@ The additional functionality added to the `express.Response` object by the `@hal
 Returns the `express.Application` for the given server instance.
 * `server` [Object]: The instance of the server class.
 
-#### `api(class | server, [method])`
+#### `api(server, [method])`
 Returns an object representing the method decorators (if `method` is specified) or the class decorators (otherwise). This allows for the decorators to be called dynamically (or in cases that do not support decorators). All of the calls will be finalized by the `route` call, and further modifications after that point will have no effect.
-* `class` [Function]: The server class/constructor. Calling with this will affect all non-finalized instances of the class. This cannot be used to modify methods.
-* `server` [Object]: The instance of the server class. Calling with this will only affect that instance.
+* `server` [Object]: The instance of the server class.
 * `method` [string]: The name of the handler method.
 
 #### `hal.discovery`

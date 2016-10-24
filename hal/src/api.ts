@@ -2,8 +2,7 @@
 
 import * as express from 'express';
 
-import {route, provides, middleware, hal} from './decorators';
-import {Server} from './server';
+import {provides, middleware, hal} from './decorators';
 import {Verb, Rel} from './constants';
 import {Arguments} from './arguments';
 
@@ -13,13 +12,15 @@ function add<T>(obj: any, collection: string, value: T) {
     obj[Arguments.Stack][collection][obj.decorator ? 'unshift' : 'push'](value);
 }
 
+// These provide method-like representations of the decorator calls,
+// and store the provided arguments for later processing
 export namespace Api {
     export class Api {
-        constructor(protected name: string, protected decorator: boolean = false) {}
+        constructor(protected name: string, protected decorator: boolean) {}
     }
 
     export class Class extends Api {
-        constructor(name: string, decorator?: boolean) {
+        constructor(name: string, decorator: boolean) {
             super(name, decorator);
             this[Arguments.Stack] = {
                 provides: [],
@@ -39,7 +40,7 @@ export namespace Api {
     }
 
     export class Method extends Api {
-        constructor(name: string, decorator?: boolean) {
+        constructor(name: string, decorator: boolean) {
             super(name, decorator);
             this[Arguments.Stack] = {
                 route: [],

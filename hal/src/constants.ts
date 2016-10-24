@@ -1,5 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
+// Most common HTTP verbs, provided as a convenience
 export enum Method {
     GET,
     PUT,
@@ -94,9 +95,14 @@ export enum LinkRelation {
 export type Rel = string | LinkRelation;
 
 export namespace Rel {
+    // The well-defined parameter name for CURIE documentation shorthands
     export const Param = 'rel';
+
+    // The well-defined rel name for CURIEs
+    export const Curies = 'curies';
 }
 
+// Type definitions for a HAL response object
 export namespace Hal {
     export interface Link {
         href: string;

@@ -7,12 +7,15 @@ import {Hal} from './constants';
 import {hal} from './decorators';
 
 export class Template {
+    // Test a level-1 templated link and extract parameter names
     private static l1 = /\{(\w+)\}/g;
 
     // This is overly-permissive for actual level-4 parsing, but it is
     // only used to test whether or not a link contains a templated href
     private static l4 = /\{\W?([\w\:\*\,]+)\}/g;
 
+    // Generate a parameters object from an Express path containing
+    // template parameters for each Express parameter
     private static params(href: string) {
         let params: { [param: string]: string } = {};
         const parsed = pathToRegexp.parse(href);
@@ -27,10 +30,13 @@ export class Template {
         return params;
     }
 
+    // Decode any template parameters that were encoded by Express parameter handling
     private static decode(href: string): string {
         return href.replace(/%7B.+?%7D/g, param => decodeURIComponent(param));
     }
 
+    // Apply the given parameters to the templated path,
+    // and return a partial template for any missing parameters
     static apply(href: string, params: any): string {
         if (Template.l1.test(href)) {
             // Handle URI template
@@ -44,8 +50,9 @@ export class Template {
         }
     }
 
+    // Convert an internal link object to a HAL link
     static link(resolved: hal.Overrides): Hal.Link {
-        let link: Hal.Link = { href: resolved.href };
+        let link: Hal.Link = { href: resolved.href! };
         if (resolved.href && resolved.params) {
             // Create templates for all undefined params and fully resolve the href
             link.href = Template.apply(resolved.href, resolved.params);
@@ -63,6 +70,7 @@ export class Template {
         return link;
     }
 
+    // Convert a templated URI into the nearest-possible templated Express path 
     static express(href: string): string {
         // If this is not a templated URI, pass it through
         if (!Template.l1.test(href)) {
@@ -74,6 +82,6 @@ export class Template {
         // Reduce the full route to its path portion; URI templates support templated query parameters,
         // but Express does not, and since URI templates do not support optional parameters, this will
         // not interfere with any Express syntax
-        return url.parse(route).pathname;
+        return url.parse(route).pathname!;
     }
 }

@@ -243,7 +243,7 @@ describe('HAL API Tests', () => {
         });
     }
     
-    function single<T>(map: { [rel: string]: T | T[] }, rel: string): T {
+    function single<T>(map: { [rel: string]: T | T[] } = {}, rel: string): T {
         let item = map[rel];
         expect(item).toBeDefined();
         if (item instanceof Array) {
@@ -253,7 +253,7 @@ describe('HAL API Tests', () => {
         }
     }
     
-    function array<T>(map: { [rel: string]: T | T[] }, rel: string): T[] {
+    function array<T>(map: { [rel: string]: T | T[] } = {}, rel: string): T[] {
         let item = map[rel];
         if (item instanceof Array) {
             return item;
@@ -287,12 +287,12 @@ describe('HAL API Tests', () => {
         router = express();
         router.use('/test', route(server.test));
         router.use('/alt', route(server.alt));
-        router.use('/extended', route(server.extended));
 
         router.get('/', hal.discovery);
         
         app = express();
         app.use('/api', router);
+        app.use('/extended', route(server.extended));
     });
 
     it('Should execute middleware in listed order', done => {
@@ -358,14 +358,14 @@ describe('HAL API Tests', () => {
         
         // Test added links
         testStandardLink(result, TestApiName, 'extra');
-        expect(result._links[`${TestApiName}:override`]).toBeUndefined();
+        expect(result._links![`${TestApiName}:override`]).toBeUndefined();
         expect(single(result._links, `${TestApiName}:custom`).href).toBe('http://www.contoso.com');
         let alternates = array(result._links, 'alternate');
         expect(alternates.length).toBe(1);
         expect(alternates[0].href).toBe('/api/test/override');
 
         // Test shared-namespace links
-        expect(single(result._links, `${TestApiName}:extended`).href).toBe('/api/extended/extended');
+        expect(single(result._links, `${TestApiName}:extended`).href).toBe('/extended/extended');
         
         // Test embedded objects
         expect(result._embedded).toBeDefined();
@@ -381,7 +381,7 @@ describe('HAL API Tests', () => {
         expect(customEmbedded).toBeDefined();
         expect(customEmbedded['value']).toBe('test');
         expect(customEmbedded._links).toBeDefined();
-        expect(customEmbedded._links['self']).toBeUndefined();
+        expect(customEmbedded._links!['self']).toBeUndefined();
         testStandardLink(customEmbedded, TestApiName, 'override');
 
         let parentEmbedded = single(result._embedded, `${TestApiName}:parent`);
@@ -395,7 +395,7 @@ describe('HAL API Tests', () => {
         expect(childEmbedded['value']).toBe('child');
         expect(childEmbedded._links).toBeDefined();
         expect(single(childEmbedded._links, 'self').href).toBe('/api/test/child');
-        expect(childEmbedded._links['curies']).toBeUndefined();
+        expect(childEmbedded._links!['curies']).toBeUndefined();
         testStandardLink(childEmbedded, AltApiName, 'cross');
  
         // Test content
@@ -443,7 +443,7 @@ describe('HAL API Tests', () => {
         expect(result).toBeDefined();
         expect(result._links).toBeDefined();
         expect(single(result._links, `${TestApiName}:template`).href).toBe('/api/test/template/name');
-        expect(result._links['self']).toBeUndefined();
+        expect(result._links!['self']).toBeUndefined();
  
         done();
     });

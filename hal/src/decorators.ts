@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {Server} from './server';
-import {Method, Verb, Rel} from './constants';
+import {Verb, Rel} from './constants';
 import {Api} from './api';
 
 type ExpressHandlerDescriptor = TypedPropertyDescriptor<express.RequestHandler>;
@@ -12,11 +12,11 @@ export function provides(rel?: Rel, options?: provides.Options.Namespace & provi
     return function (target: Object | Function, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --
-            Server.api(true, target).provides(rel && rel.toString(), options);
+            Server.api(true, target.prototype).provides(rel && rel.toString(), options);
             return target;
         } else {
             // -- Method decorator --
-            Server.api(true, target, methodName).provides(rel, options);
+            Server.api(true, target, methodName!).provides(rel, options);
             return descriptor;
         }
     };
@@ -77,7 +77,7 @@ export function route(first: Verb | Object, second?: string): express.Applicatio
     } else {
         return function (target: Object, methodName: string | symbol, descriptor: ExpressHandlerDescriptor): ExpressHandlerDescriptor | void {
             // -- Method decorator --
-            Server.api(true, target, methodName).route(first, second);
+            Server.api(true, target, methodName).route(first, second!);
             return descriptor;
         };
     }
@@ -87,11 +87,11 @@ export function middleware(handler: express.RequestHandler | express.ErrorHandle
     return function (target: Function | Object, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --
-            Server.api(true, target).middleware(handler, options);
+            Server.api(true, target.prototype).middleware(handler, options);
             return target;
         } else {
             // -- Method decorator --
-            Server.api(true, target, methodName).middleware(handler as express.RequestHandler);
+            Server.api(true, target, methodName!).middleware(handler as express.RequestHandler);
             return descriptor;
         }
     };
@@ -104,8 +104,7 @@ export namespace middleware {
 }
 
 export function api(server: Object): Api.Class;
-export function api(constructor: Function): Api.Class;
 export function api(server: Object, method: string | symbol): Api.Method;
-export function api(target: Object | Function, method?: string | symbol): Api.Class | Api.Method {
-    return Server.api(false, target, method);
+export function api(server: Object, method?: string | symbol): Api.Class | Api.Method {
+    return Server.api(false, server, method!);
 }

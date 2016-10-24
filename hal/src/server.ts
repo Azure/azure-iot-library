@@ -3,55 +3,64 @@
 import * as express from 'express';
 import * as url from 'url';
 
-import {LinkRelation, Rel, Method, Verb} from './constants';
+import {LinkRelation, Rel, Method} from './constants';
 import {Response} from './response';
-import {route, provides, middleware, hal} from './decorators';
+import {provides, hal} from './decorators';
 import {Api} from './api';
 import {Linker} from './linker';
 import {Template} from './template';
 import {Arguments} from './arguments';
 
+// Resolve a relative href using the base path of an Express application
 function relative(app: express.Application, href: string): string {
     return href && href[0] === '/' ? app.path().replace(/\/+$/, '') + href : href;
 }
 
+// Extract the path portion of an Express request
 function path(req: express.Request): string {
-    return url.parse(req.originalUrl).path;
+    return url.parse(req.originalUrl).path!;
 }
 
+// Provides functionality for embedding HAL server data in a given server object
 export class Server {
-    static api(decorator: boolean, server: Object): Api.Class;
-    static api(decorator: boolean, constructor: Function): Api.Class;
-    static api(decorator: boolean, server: Object, method: string | symbol): Api.Method;
-    static api(decorator: boolean, target: Object | Function, method?: string | symbol): Api.Api {
+    // Provide a global linker for cross-server registration
+    static linker: Linker = new Linker();
+
+    // Access the functional decorator representation for the target server or method;
+    // this will typically be a prototype when called for a decorator and an instance otherwise
+    static api(decorator: boolean, target: Object): Api.Class;
+    static api(decorator: boolean, target: Object, method: string | symbol): Api.Method;
+    static api(decorator: boolean, target: Object, method?: string | symbol): Api.Api {
         let api: Api.Api;
-        if (typeof target === 'function' || !method) {
-            let obj = typeof target === 'function' ? (target as Function).prototype : target;
-            if (!obj.hasOwnProperty(Server.Class)) {
-               obj[Server.Class] = new Api.Class(obj.constructor.name);
+        if (!method) {
+            if (!target.hasOwnProperty(Server.Class)) {
+               target[Server.Class] = new Api.Class(target.constructor.name, decorator);
             }
-            api = obj[Server.Class];
+            api = target[Server.Class];
         } else {
             if (!target.hasOwnProperty(Server.Methods)) {
                 target[Server.Methods] = {};
             }
             if (!target[Server.Methods][method]) {
-                target[Server.Methods][method] = new Api.Method(method.toString());
+                target[Server.Methods][method] = new Api.Method(method.toString(), decorator);
             }
             api = target[Server.Methods][method];
         }
-        // The decorator parameter needs to be private to the outside world, but we need to modify it here
-        (api as any).decorator = decorator;
         return api;
     }
     
+    // Generate an automated documentation Express handler for the given namespace
     private static autodoc(ns: string): express.RequestHandler {
         return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+            // If a rel was not provided, this is not a valid documentation call
             if (!req.params[Rel.Param]) {
                 res.sendStatus(404);
             }
+
+            // For each possible route in the resolved rel, display the route, all available verbs,
+            // and the given description for each verb (if available)
             let doc = '';
-            Linker.handle(null, ns + ':' + req.params[Rel.Param], (server: Object, route: string, links: Server.Link[]) => {
+            Server.linker.handle({}, ns + ':' + req.params[Rel.Param], (server: Object, route: string, links: Server.Link[]) => {
                 doc += `<h1>${route}</h1>`;
                 links.forEach(link => {
                     if (link.description) {
@@ -60,6 +69,8 @@ export class Server {
                     }
                 });
             });
+
+            // If nothing was found (even routes), assume this was not a valid rel
             if (doc) {
                 res.status(200).send(doc);
             } else {
@@ -68,10 +79,11 @@ export class Server {
         };
     }
 
+    // Register all data for a single handler method
     private static register(server: Object, method: Arguments.Method, app: express.Application, handler: express.RequestHandler) {
         // Merge hal and middleware decorator calls
         const hal = {
-            links: new Set(method.hal.reduce((links, hal) => links.concat(hal.links), []) as Rel[]),
+            links: new Set(method.hal.reduce<Rel[]>((links, hal) => links.concat(hal.links), [])),
             options: method.hal.reduce((options, hal) => Object.assign(options, hal.options), {}) as hal.Options
         };
         const middleware = method.middleware.map(middleware => middleware.handler);
@@ -96,7 +108,7 @@ export class Server {
                 // If this method provides rels, map them for quick access
                 for (let provides of method.provides) {
                     let template = Template.apply(route.path, provides.options.params || {});
-                    Linker.registerLink(server, provides.rel, template, Object.assign({
+                    Server.linker.registerLink(server, provides.rel, template, Object.assign({
                         verb: route.verb,
                         href: route.path,
                         links
@@ -105,9 +117,10 @@ export class Server {
 
                 // If this is a HAL handler, add middleware that will transmute the response object into a HAL response
                 // (with the current links for this route)
-                const handlers = method.hal.length === 0 ? middleware : middleware.concat(
+                const handlers = method.hal.length === 0 ? middleware : [
                     (req: express.Request, res: express.Response, next: express.NextFunction) =>
-                        Response.create(server, path(req), links, req, res) && next());
+                        Response.create(server, path(req), links, req, res) && next()
+                ].concat(middleware);
                 
                 app[route.verb.toLowerCase()].call(app, Template.express(route.path), handlers, handler);
             } else {
@@ -116,7 +129,7 @@ export class Server {
         }
     }
 
-    // Merge class and instance decorators
+    // Merge class and instance decorators to support prototype inheritance
     private static proto(target: Object): Arguments.Class & { methods: { [method: string]: Api.Method } } {
         let proto: Arguments.Class & { methods: { [method: string]: Api.Method } } = { provides: [], middleware: [], methods: {} };
 
@@ -136,8 +149,10 @@ export class Server {
         return proto;
     }
 
+    // Obtain the Express application for the given server object
     static route(server: Object): express.Application {
         if (!server[Server.App]) {
+            // If this is the first time this has been called, perform all necessary registration actions
             let app = server[Server.App] = express();
 
             const proto = Server.proto(server);
@@ -151,7 +166,7 @@ export class Server {
             for (let provides of proto.provides) {
                 const href = provides.options.href || `/docs/${provides.namespace}/:${Rel.Param}`;
 
-                Linker.registerDocs(server, provides.namespace, href);
+                Server.linker.registerDocs(server, provides.namespace, href);
 
                 // Register automatically-generated documentation
                 if ((typeof provides.options.auto === 'undefined' && typeof provides.options.href === 'undefined') || provides.options.auto) {
@@ -181,12 +196,12 @@ export class Server {
             }
 
             // Ensure proper relative href resolution
-            Linker.setDocsCallback(server, docs => {
-                docs.href = relative(app, docs.href);
+            Server.linker.setDocsCallback(server, docs => {
+                docs.href = relative(app, docs.href!);
                 return docs;
             });
-            Linker.setLinkCallback(server, link => {
-                link.href = relative(app, link.href);
+            Server.linker.setLinkCallback(server, link => {
+                link.href = relative(app, link.href!);
                 return link;
             });
         }
@@ -194,9 +209,10 @@ export class Server {
         return server[Server.App];
     }
     
+    // An Express handler which provides HAL links to all discoverable routes
     static discovery(req: express.Request, res: express.Response, next: express.NextFunction) {
-        const hal = Response.create(null, path(req), [], req, res);
-        for (let server of Linker.servers()) {
+        const hal = Response.create({}, path(req), [], req, res);
+        for (let server of Server.linker.servers()) {
             const proto = Server.proto(server);
             for (let methodName in proto.methods) {
                 for (let provides of proto.methods[methodName][Arguments.Stack].provides) {

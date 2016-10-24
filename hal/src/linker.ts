@@ -1,30 +1,40 @@
+/* Copyright (c) Microsoft Corporation. All Rights Reserved. */
+
 import {LinkRelation, Rel} from './constants';
 import {hal} from './decorators';
 
+// Obtain the first defined instance of a property
 function first<T>(items: Object[], property: string): T {
     const first = items.find(value => typeof value[property] !== 'undefined');
     return first ? first[property] : undefined;
 }
 
+// This provides a mechanism for resolving rels across a number of server classes
 export class Linker {
-    private static map: { [name: string]: Object[] } = {};
+    private map: { [name: string]: Object[] };
 
-    private static parse<T>(
+    constructor() {
+        this.map = {};
+    }
+
+    // Parse a rel and provide it in a normalized form along with its server class and namespace (if one exists)
+    private parse<T>(
         base: Object,
         rel: Rel,
-        callback: (server: Object, parsed: string, ns: string) => T
+        callback: (server: Object, parsed: string, ns?: string) => T
     ): T {
         if (typeof rel === 'string') {
             const parts = rel.split(':');
 
-            // If the rel is not namespaced, assume it shares the namespace of this server (if one was provided)
+            // If the rel is not namespaced, assume it shares the namespace of this server
+            // (if the server object has a default namespace)
             if (parts.length === 1) {
-                parts.unshift(base && Data.from(base).name);
+                parts.unshift(Data.from(base).name || '');
             }
 
             if (parts[0]) {
                 // If the rel is namespaced, find the associated server class that provides this namespace and rel
-                const server = Linker.map[parts[0]] && Linker.map[parts[0]].find(server => !!Data.from(server).links[parts.join(':')]);
+                const server = this.map[parts[0]] && this.map[parts[0]].find(server => !!Data.from(server).links[parts.join(':')]);
                 return callback(server || base, parts.join(':'), parts[0]);
             } else {
                 // Fall back to the provided server
@@ -32,41 +42,47 @@ export class Linker {
             }
         } else {
             // Default relations cannot be cross-class, because they are not namespaced
-            return callback(base, LinkRelation[rel], null);
+            return callback(base, LinkRelation[rel], undefined);
         }
     }
     
-    static handle<T>(
+    // Parse the provided rel, and map it via a translation callback on each of its routes,
+    // providing the registered link data for each route
+    handle<T>(
         base: Object,
         rel: Rel,
         callback: (server: Object, route: string, links: hal.Overrides[]) => T
     ): T[] {
-        return Linker.parse(base, rel, (server, parsed) => {
-            const routes = server && Data.from(server).links[parsed];
-            return routes && Object.keys(routes).map(route => {
+        return this.parse(base, rel, (server, parsed) => {
+            const routes = Data.from(server).links[parsed];
+            return routes ? Object.keys(routes).map(route => {
                 return callback(server, route, routes[route]);
-            });
+            }) : [];
         });
     }
     
-    static normalize(base: Object, rel: Rel): string {
-        return Linker.parse(base, rel, (server, parsed, ns) => {
-            return ns !== null ? parsed :
+    // Parse the provided rel and return it in a normalized string form
+    normalize(base: Object, rel: Rel): string {
+        return this.parse(base, rel, (server, parsed, ns) => {
+            return typeof ns === 'string' ? parsed :
                 parsed.replace(/([A-Z])/g, '-$1').toLowerCase().substring(1);
         });
     }
 
-    static getDocs(base: Object, rel: Rel): Linker.Docs {
-        return Linker.parse(base, rel, (server, parsed, ns) => {
-            return server && ns ? Data.from(server).docsCb({
-                name: ns,
-                href: Data.from(server).docs[ns].href
-            }) : null;
+    // Obtain the registered documentation for the namespace of the provided rel (if any)
+    getDocs(base: Object, rel: Rel): Linker.Docs {
+        return this.parse(base, rel, (server, parsed, ns) => {
+            const namespace = ns || '';
+            return Data.from(server).docsCb({
+                name: namespace,
+                href: namespace && Data.from(server).docs[namespace].href
+            });
         });
     }
     
-    static getLinks(base: Object, rel: Rel): hal.Overrides[] {
-        return Linker.handle(base, rel, (server, route, links) => {
+    // Obtain the link data registered for the provided rel
+    getLinks(base: Object, rel: Rel): hal.Overrides[] {
+        return this.handle(base, rel, (server, route, links) => {
             // Merge links for multiple verbs on a single route into one
             return Data.from(server).linkCb({
                 server: server,
@@ -76,7 +92,7 @@ export class Linker {
                 href: links[0].href,
 
                 // Merge the links into a single array, using the Set object to ensure uniqueness
-                links: Array.from(new Set(links.reduce<Rel[]>((links, link) => links.concat(link.links), []))),
+                links: Array.from(new Set(links.reduce<Rel[]>((links, link) => links.concat(link.links || []), []))),
                 
                 // For these options, prefer the value from the verbs in registration order
                 id: first<string>(links, 'id'),
@@ -89,37 +105,42 @@ export class Linker {
         });
     }
 
-    static registerDocs(base: Object, name: string, href: string) {
+    // Register a namepace and documentation link to the provided server object
+    registerDocs(base: Object, name: string, href: string) {
         Data.initialize(base, name).docs[name] = { name, href };
 
         // Record this name for cross-class rel linking
-        Linker.map[name] = Linker.map[name] || [];
-        Linker.map[name].push(base);
+        this.map[name] = this.map[name] || [];
+        this.map[name].push(base);
     }
 
-    static registerLink(base: Object, rel: Rel, href: string, overrides: hal.Overrides = {}) {
+    // Register a rel and its href to the provided server object
+    registerLink(base: Object, rel: Rel, href: string, overrides: hal.Overrides = {}) {
         let data = Data.initialize(base);
-        Linker.parse(base, rel, (server, parsed, ns) => {
+        this.parse(base, rel, (server, parsed, ns) => {
             data.links[parsed] = data.links[parsed] || {};
             data.links[parsed][href] = data.links[parsed][href] || [];
             data.links[parsed][href].push(Object.assign({
                 server,
                 href,
-                rel: ns !== null ? parsed : rel
+                rel: typeof ns === 'string' ? parsed : rel
             }, overrides));
         });
     }
 
-    static setDocsCallback(base: Object, cb: (docs: Linker.Docs) => Linker.Docs) {
+    // Provide a post-processing callback for this server to handle its documentation
+    setDocsCallback(base: Object, cb: (docs: Linker.Docs) => Linker.Docs) {
         Data.initialize(base).docsCb = cb;
     }
 
-    static setLinkCallback(base: Object, cb: (link: hal.Overrides) => hal.Overrides) {
+    // Provide a post-processing callback for this server to handle its links
+    setLinkCallback(base: Object, cb: (link: hal.Overrides) => hal.Overrides) {
         Data.initialize(base).linkCb = cb;
     }
 
-    static servers(): Object[] {
-        return Array.from(new Set(Object.keys(Linker.map).reduce((all, name) => all.concat(Linker.map[name]), [])));
+    // Provide a list of all server objects registered to this linker
+    servers(): Object[] {
+        return Array.from(new Set(Object.keys(this.map).reduce<Object[]>((all, name) => all.concat(this.map[name]), [])));
     }
 }
 
@@ -141,10 +162,13 @@ interface Data {
 namespace Data {
     const Embedded = Symbol();
 
+    // Obtain embedded linker data for this server object (if present),
+    // or defaults if this server has not been registered
     export function from(target: Object): Data {
         return target[Embedded] || { links: {}, docs: {}, linkCb: i => i, docsCb: i => i };
     }
 
+    // Initialize and return linker data for this server object
     export function initialize(target: Object, name?: string): Data {
         target[Embedded] = from(target);
         target[Embedded].name = target[Embedded].name || name;

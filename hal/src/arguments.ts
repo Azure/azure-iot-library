@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {Rel, Verb} from './constants';
-import {route, provides, middleware, hal} from './decorators';
+import {provides, middleware, hal} from './decorators';
 
 // Provides interfaces for storing the arguments of the decorator callstacks
 // NOTE: These should be aligned with the arguments of the decorators and the Api classes
