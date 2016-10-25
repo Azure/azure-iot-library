@@ -127,7 +127,7 @@ export class Response implements hal.Response {
                 let str = Rel.stringify(resolved.rel);
                 _private(this).docs(resolved);
                 _private(this).hal.addLink(str, Template.link(resolved));
-                ensureArray(_private(this).hal._links, str, overrides.array);
+                ensureArray(_private(this).hal._links, str, resolved.array);
             } else {
                 console.error(`Cannot find rel: ${Rel.stringify(Server.linker.normalize(_private(this).server, rel))}`);
             }
@@ -143,7 +143,7 @@ export class Response implements hal.Response {
             let resource = Response.resource(resolved, _private(this).root, value);
             _private(this).docs(resolved);
             _private(this).hal.addEmbed(str, _private(resource).hal);
-            ensureArray(_private(this).hal._embedded, str, overrides.array);
+            ensureArray(_private(this).hal._embedded, str, resolved.array);
             return resource;
         } else {
             // If we failed to resolve the rel, return a dummy HAL resource object, but do not embed it

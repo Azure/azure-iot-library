@@ -87,6 +87,9 @@ export class Linker {
 
                 // Merge the links into a single array, using the Set object to ensure uniqueness
                 links: Array.from(new Set(links.reduce<Rel[]>((links, link) => links.concat(link.links || []), []))),
+
+                // If any of the verbs guarantee an array, do so here 
+                array: links.reduce((array, link) => link.array || array, false),
                 
                 // For these options, prefer the value from the verbs in registration order
                 id: first<string>(links, 'id'),

@@ -222,7 +222,7 @@ let AutoDocDescription = 'A description for automatic documentation.';
 @provides('list')
 class ListApi {
     @route(Method.GET, '/item')
-    @provides('item', { description: AutoDocDescription })
+    @provides('item', { description: AutoDocDescription, array: true })
     Item(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
@@ -275,6 +275,7 @@ describe('HAL API Tests', () => {
     
     function array<T>(map: { [rel: string]: T | T[] } = {}, rel: string): T[] {
         let item = map[rel];
+        expect(item).toBeDefined();
         if (item instanceof Array) {
             return item;
         } else {
@@ -548,7 +549,7 @@ describe('HAL API Tests', () => {
         expect(result._links!['curies']).toBeUndefined();
 
         // ... but the links do
-        expect(single(result._links, 'item').href).toBe('/api/list/item');
+        expect(array(result._links, 'item')[0].href).toBe('/api/list/item');
 
         done();
     });

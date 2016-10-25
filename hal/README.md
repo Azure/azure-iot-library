@@ -40,10 +40,11 @@ Indicates a rel this handler provides; it can be used multiple times, and omitti
 * `rel` [string | LinkRelation]: The rel this route provides; this is either a string specifying a custom rel (which will automatically be prepended with this server's namespace, e.g. 'ns:rel' in the example below) or an instance of the LinkRelation enum, specifying one of the standard, non-namespaced rels.
 * `options` [provides.Options.Rel] *(optional)*:
     * `discoverable` [boolean]: Indicates whether this handler should be included in the discoverability API; default is false.
+    * `description` [string]: The description that will be used for this rel and this route in automatically-generated documentation.
     * `params` [any]: URI parameters to explicitly force for this rel. This allows, for example, a route with an optional parameter to have a separate rel explicitly for when that parameter is empty.
+    * `array` [boolean]: The rel will be forced to be an array, even if it only contains one link.
     * `id` [string]: The name of the ID parameter. This will fill out the 'name' in any links to this rel from the corresponding entry in the params object.
     * `title` [string]: The value to be placed in the 'title' parameter in any links to this rel.
-    * `description` [string]: The description that will be used for this rel and this route in automatically-generated documentation.
 
 #### `@middleware(handler)`
 Indicates Express-style middleware to use with this route; it can be used multiple times to add more than one middleware function per route.
@@ -67,10 +68,10 @@ The additional functionality added to the `express.Response` object by the `@hal
     * `overrides` [hal.Overrides] *(optional)*: Allows you to override the default behavior for the following:
         * `rel` [string | LinkRelation]: The HAL response will include the link under this rel, though the href will still be populated automatically as normal.
         * `href` [string]: The HAL response will use the provided href for this rel, rather than the server-provided one.
-        * `params` [any]: The href will be populated using this params object, rather than the one from the request.
         * `server` [Object]: The server class used for non-namespaced and standard rels.
-        * `array` [boolean]: The rel will be forced to be an array, even if it only contains one link.
         * `links` [Array&lt;string | LinkRelation&gt;]: The array of rels associated with this link. This corresponds to the array of rels provided to the `@hal` decorator for this link, plus the 'self' rel if it would typically be present, and is used for link embedding when necessary.
+        * `params` [any]: The href will be populated using this params object, rather than the one from the request.
+        * `array` [boolean]: The rel will be forced to be an array, even if it only contains one link.
         * `id` [string]: The 'name' parameter for this link will be set to this member of the params object.
         * `title` [string]: The 'title' parameter for this link will be set to this value.
 * `embed(rel, value, [overrides])`: Dynamically adds an embedded value to the response. Returns a `hal.Response` to provide HAL functionality on the embedded response (but not Express functionality).
