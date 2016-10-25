@@ -67,10 +67,7 @@ export class Linker {
     // Obtain the registered documentation for the namespace of the provided rel (if any)
     getDocs(base: Object, rel: Rel): Linker.Docs {
         return this.parse(base, rel, (server, parsed, ns) => {
-            return Data.from(server).docsCb({
-                name: ns,
-                href: ns && Data.from(server).docs[ns].href
-            });
+            return Data.from(server).docsCb(Data.from(server).docs[ns] || { name: '', href: '' });
         });
     }
     
