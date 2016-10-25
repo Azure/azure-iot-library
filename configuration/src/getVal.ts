@@ -9,7 +9,7 @@ export function getVal(keyArg: string | string[], configObject: { [key: string]:
     // Flat return with single key
     if (typeof keyArg === 'string') {
         val = configObject[keyArg];
-        return val || null;
+        return val != null ? val : null;
     }
     // Nested return with array of keys
     else if (Array.isArray(keyArg)) {
@@ -22,7 +22,7 @@ export function getVal(keyArg: string | string[], configObject: { [key: string]:
                 return null;
             }
         }
-        return val || null;
+        return val != null ? val : null;
     }
 }
 
@@ -42,7 +42,7 @@ export function getEnvVal(keyArg: string | string[], returnAsString: boolean): a
                 // pass
             }
         }
-        return val || null;
+        return val != null ? val : null;
     }
     // Nested return with array of keys
     else if (Array.isArray(keyArg)) {
@@ -60,6 +60,6 @@ export function getEnvVal(keyArg: string | string[], returnAsString: boolean): a
                 return null;
             }
         }
-        return val || null;
+        return val != null ? val : null;
     }
 }

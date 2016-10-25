@@ -25,7 +25,11 @@ describe('Environment configuration provider', () => {
             CONN_STR: 'iot-hub-conn-str-val',
             MONGO_URI: 'mongodb://localhost:27017/test',
             STRINGIFIED_FRUITS: `{"fruits":["apple","banana"]}`,
-            NESTED_OBJECT: `{"fruits":{"apples":{"gala":41,"jonagold":42,"honeycrisp":"43"}}}`
+            NESTED_OBJECT: `{"fruits":{"apples":{"gala":41,"jonagold":42,"honeycrisp":"43"}}}`,
+            EMPTY_STRING: '',
+            FALSE: 'false',
+            ZERO: '0',
+            NULL: 'null'
         };
         fruitsObject = {
             fruits: ['apple', 'banana']
@@ -49,6 +53,10 @@ describe('Environment configuration provider', () => {
         expect(envConfig.get<{ [key: string]: string[] }>('STRINGIFIED_FRUITS'))
             .toEqual(fruitsObject);
         expect(envConfig.get(['NESTED_OBJECT', 'fruits', 'apples', 'gala'])).toEqual(41);
+        expect(envConfig.get('EMPTY_STRING')).toEqual('');
+        expect(envConfig.get('ZERO')).toEqual(0);
+        expect(envConfig.get('FALSE')).toEqual(false);
+        expect(envConfig.get('NULL')).toEqual(null);
         expect(envConfig.getString(['NESTED_OBJECT', 'fruits', 'apples', 'honeycrisp']))
             .toEqual('43');
     });
