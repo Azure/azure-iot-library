@@ -12,7 +12,7 @@ export function provides(rel?: Rel, options?: provides.Options.Namespace & provi
     return function (target: Object | Function, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --
-            Server.api(true, target.prototype).provides(rel && rel.toString(), options);
+            Server.api(true, target.prototype).provides(rel && Rel.stringify(rel), options);
             return target;
         } else {
             // -- Method decorator --

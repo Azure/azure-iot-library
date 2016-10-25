@@ -2,7 +2,7 @@
 
 // Most common HTTP verbs, provided as a convenience
 export enum Method {
-    GET,
+    GET = 1,
     PUT,
     POST,
     DELETE,
@@ -13,7 +13,7 @@ export type Verb = string | Method;
 
 // Well-defined link relations according to http://www.iana.org/assignments/link-relations/link-relations.xhtml
 export enum LinkRelation {
-    About,
+    About = 1,
     Alternate,
     Appendix,
     Archives,
@@ -100,6 +100,11 @@ export namespace Rel {
 
     // The well-defined rel name for CURIEs
     export const Curies = 'curies';
+
+    // Convert the rel into a string form
+    export function stringify(rel: Rel): string {
+        return typeof rel === 'string' ? rel : LinkRelation[rel].replace(/([A-Z])/g, '-$1').toLowerCase().substring(1);
+    }
 }
 
 // Type definitions for a HAL response object

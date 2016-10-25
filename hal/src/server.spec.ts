@@ -182,7 +182,7 @@ class TestApi {
 class ExtendedApi {
     @route(Method.GET, '/extended')
     @provides('extended')
-    Extended(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+    Extended(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
 }
@@ -203,7 +203,6 @@ class AltApi {
 
 let ParentApiName = 'parent';
 let ParentApiDocs = `/docs/${ParentApiName}/{rel}`;
-let AutoDocDescription = 'A description for automatic documentation.';
 @provides(ParentApiName)
 class ParentApi {}
 
@@ -213,8 +212,27 @@ class DynamicApi extends ParentApi {
     }
 
     @route(Method.GET, '/inherited')
-    @provides('inherited', { description: AutoDocDescription })
+    @provides('inherited')
     Inherited(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
+}
+
+let AutoDocDescription = 'A description for automatic documentation.';
+@provides('list')
+class ListApi {
+    @route(Method.GET, '/item')
+    @provides('item', { description: AutoDocDescription })
+    Item(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
+
+    @route(Method.GET, '/list')
+    @hal()
+    List(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
+        res.link('item', {
+            rel: LinkRelation.Item
+        });
         res.json({});
     }
 }
@@ -226,7 +244,8 @@ describe('HAL API Tests', () => {
         extended: new ExtendedApi(),
         alt: new AltApi(),
         parent: new ParentApi(),
-        dynamic: new DynamicApi()
+        dynamic: new DynamicApi(),
+        list: new ListApi()
     };
     let response: any;
     let request: any;
@@ -294,6 +313,7 @@ describe('HAL API Tests', () => {
         router = express();
         router.use('/test', route(server.test));
         router.use('/alt', route(server.alt));
+        router.use('/list', route(server.list));
 
         router.get('/', hal.discovery);
         
@@ -517,13 +537,27 @@ describe('HAL API Tests', () => {
         done();
     });
 
-    it('Automatic documentation works as expected', done => {
-        router.use('/dynamic', route(server.dynamic));
+    it('Overridden rels do not provide their original CURIEs', done => {
+        call('get', `http://localhost/api/list/list`, done);
 
-        call('get', `http://localhost/api/dynamic/docs/${ParentApiName}/inherited`, done);
+        // Test _links
+        expect(result).toBeDefined();
+        expect(result._links).toBeDefined();
+
+        // CURIEs do not get populated...
+        expect(result._links!['curies']).toBeUndefined();
+
+        // ... but the links do
+        expect(single(result._links, 'item').href).toBe('/api/list/item');
+
+        done();
+    });
+
+    it('Automatic documentation works as expected', done => {
+        call('get', `http://localhost/api/list/docs/list/item`, done);
 
         // Test basic automatic documentation
-        expect((result as string).replace(/&#x2F;/g, '/')).toBe(`<h1>/api/dynamic/inherited</h1><h2>GET</h2><p>${AutoDocDescription}</p>`);
+        expect((result as string).replace(/&#x2F;/g, '/')).toBe(`<h1>/api/list/item</h1><h2>GET</h2><p>${AutoDocDescription}</p>`);
 
         done();
     });
