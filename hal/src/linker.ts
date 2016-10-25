@@ -1,6 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {LinkRelation, Rel} from './constants';
+import {Rel} from './constants';
 import {hal} from './decorators';
 
 // Obtain the first defined instance of a property
@@ -21,7 +21,7 @@ export class Linker {
     private parse<T>(
         base: Object,
         rel: Rel,
-        callback: (server: Object, parsed: string, ns?: string) => T
+        callback: (server: Object, parsed: Rel, ns: string) => T
     ): T {
         if (typeof rel === 'string') {
             const parts = rel.split(':');
@@ -36,14 +36,12 @@ export class Linker {
                 // If the rel is namespaced, find the associated server class that provides this namespace and rel
                 const server = this.map[parts[0]] && this.map[parts[0]].find(server => !!Data.from(server).links[parts.join(':')]);
                 return callback(server || base, parts.join(':'), parts[0]);
-            } else {
-                // Fall back to the provided server
-                return callback(base, parts[1], '');
             }
-        } else {
-            // Default relations cannot be cross-class, because they are not namespaced
-            return callback(base, LinkRelation[rel], undefined);
         }
+
+        // Rels with unresolvable namespaces fall back to the provided server;
+        // default relations cannot be cross-class, because they are not namespaced
+        return callback(base, rel, '');
     }
     
     // Parse the provided rel, and map it via a translation callback on each of its routes,
@@ -61,22 +59,15 @@ export class Linker {
         });
     }
     
-    // Parse the provided rel and return it in a normalized string form
-    normalize(base: Object, rel: Rel): string {
-        return this.parse(base, rel, (server, parsed, ns) => {
-            return typeof ns === 'string' ? parsed :
-                parsed.replace(/([A-Z])/g, '-$1').toLowerCase().substring(1);
-        });
+    // Parse the provided rel and return it in a normalized form
+    normalize(base: Object, rel: Rel): Rel {
+        return this.parse(base, rel, (server, parsed) => parsed);
     }
 
     // Obtain the registered documentation for the namespace of the provided rel (if any)
     getDocs(base: Object, rel: Rel): Linker.Docs {
         return this.parse(base, rel, (server, parsed, ns) => {
-            const namespace = ns || '';
-            return Data.from(server).docsCb({
-                name: namespace,
-                href: namespace && Data.from(server).docs[namespace].href
-            });
+            return Data.from(server).docsCb(Data.from(server).docs[ns] || { name: '', href: '' });
         });
     }
     
@@ -93,6 +84,9 @@ export class Linker {
 
                 // Merge the links into a single array, using the Set object to ensure uniqueness
                 links: Array.from(new Set(links.reduce<Rel[]>((links, link) => links.concat(link.links || []), []))),
+
+                // If any of the verbs guarantee an array, do so here 
+                array: links.reduce((array, link) => link.array || array, false),
                 
                 // For these options, prefer the value from the verbs in registration order
                 id: first<string>(links, 'id'),
@@ -123,7 +117,7 @@ export class Linker {
             data.links[parsed][href].push(Object.assign({
                 server,
                 href,
-                rel: typeof ns === 'string' ? parsed : rel
+                rel: parsed
             }, overrides));
         });
     }
@@ -152,7 +146,7 @@ export namespace Linker {
 }
 
 interface Data {
-    links: { [rel: string]: { [route: string]: hal.Overrides[] } };
+    links: { [rel: string]: Data.Rel, [rel: number]: Data.Rel };
     docs: { [name: string]: Linker.Docs };
     linkCb: (link: hal.Overrides) => hal.Overrides;
     docsCb: (docs: Linker.Docs) => Linker.Docs;
@@ -161,6 +155,8 @@ interface Data {
 
 namespace Data {
     const Embedded = Symbol();
+
+    export type Rel = { [route: string]: hal.Overrides[] };
 
     // Obtain embedded linker data for this server object (if present),
     // or defaults if this server has not been registered

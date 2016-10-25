@@ -9,7 +9,7 @@ import {Rel, LinkRelation, Hal} from './constants';
 import {hal} from './decorators';
 
 // Conditionally ensure this link or embed is an array, even if it's only a single item
-function ensureArray<T>(set: { [rel: string]: T | T[] } = {}, rel: Rel, ensure?: boolean) {
+function ensureArray<T>(set: { [rel: string]: T | T[] } = {}, rel: string, ensure?: boolean) {
     let value = set[rel];
     if (ensure && value && !(value instanceof Array)) {
         set[rel] = [value];
@@ -124,11 +124,12 @@ export class Response implements hal.Response {
     link(rel: Rel, overrides: hal.Overrides = {}) {
          _private(this).resolve(rel, overrides).forEach(resolved => {
             if (resolved.rel && resolved.href) {
+                let str = Rel.stringify(resolved.rel);
                 _private(this).docs(resolved);
-                _private(this).hal.addLink(resolved.rel.toString(), Template.link(resolved));
-                ensureArray(_private(this).hal._links, resolved.rel, overrides.array);
+                _private(this).hal.addLink(str, Template.link(resolved));
+                ensureArray(_private(this).hal._links, str, resolved.array);
             } else {
-                console.error(`Cannot find rel: ${Server.linker.normalize(_private(this).server, rel)}`);
+                console.error(`Cannot find rel: ${Rel.stringify(Server.linker.normalize(_private(this).server, rel))}`);
             }
         });
     }
@@ -138,10 +139,11 @@ export class Response implements hal.Response {
     embed(rel: Rel, value: Object, overrides: hal.Overrides = {}): hal.Response {
         let resolved = _private(this).resolve(rel, overrides)[0];
         if (resolved.rel) {
+            let str = Rel.stringify(resolved.rel);
             let resource = Response.resource(resolved, _private(this).root, value);
             _private(this).docs(resolved);
-            _private(this).hal.addEmbed(resolved.rel.toString(), _private(resource).hal);
-            ensureArray(_private(this).hal._embedded, resolved.rel, overrides.array);
+            _private(this).hal.addEmbed(str, _private(resource).hal);
+            ensureArray(_private(this).hal._embedded, str, resolved.array);
             return resource;
         } else {
             // If we failed to resolve the rel, return a dummy HAL resource object, but do not embed it

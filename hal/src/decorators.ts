@@ -12,7 +12,7 @@ export function provides(rel?: Rel, options?: provides.Options.Namespace & provi
     return function (target: Object | Function, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --
-            Server.api(true, target.prototype).provides(rel && rel.toString(), options);
+            Server.api(true, target.prototype).provides(rel && Rel.stringify(rel), options);
             return target;
         } else {
             // -- Method decorator --
@@ -24,11 +24,8 @@ export function provides(rel?: Rel, options?: provides.Options.Namespace & provi
 
 export namespace provides {
     export namespace Options {
-        export interface Rel {
+        export interface Rel extends hal.Metadata {
             discoverable?: boolean;
-            params?: any;
-            id?: string;
-            title?: string;
             description?: string;
         };
         export interface Namespace {
@@ -51,15 +48,17 @@ export namespace hal {
     export interface Options {
         self?: boolean;
     }
-    export interface Overrides {
-        rel?: Rel;
-        href?: string;
+    export interface Metadata {
         params?: any;
-        server?: Object;
         array?: boolean;
-        links?: Rel[];
         id?: string;
         title?: string;
+    }
+    export interface Overrides extends Metadata {
+        rel?: Rel;
+        href?: string;
+        server?: Object;
+        links?: Rel[];
     }
     export interface Response {
         link(rel: Rel, overrides?: Overrides): void;
