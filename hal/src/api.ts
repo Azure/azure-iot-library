@@ -2,7 +2,7 @@
 
 import * as express from 'express';
 
-import {provides, middleware, hal} from './decorators';
+import {provides, middleware, filter, hal} from './decorators';
 import {Verb, Rel} from './constants';
 import {Arguments} from './arguments';
 
@@ -16,7 +16,7 @@ function add<T>(obj: any, collection: string, value: T) {
 // and store the provided arguments for later processing
 export namespace Api {
     export class Api {
-        constructor(protected name: string, protected decorator: boolean) {}
+        constructor(public /* readonly */ name: string, protected /* readonly */ decorator: boolean) {}
     }
 
     export class Class extends Api {
@@ -46,6 +46,7 @@ export namespace Api {
                 route: [],
                 provides: [],
                 middleware: [],
+                filter: [],
                 hal: []
             } as Arguments.Method;
         }
@@ -70,6 +71,11 @@ export namespace Api {
 
         middleware(handler: express.RequestHandler): this {
             add<Arguments.Method.Middleware>(this, 'middleware', { handler });
+            return this;
+        }
+
+        filter(filter: filter.Filter): this {
+            add<Arguments.Method.Filter>(this, 'filter', { filter });
             return this;
         }
     }

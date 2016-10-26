@@ -2,7 +2,7 @@
 
 import * as express from 'express';
 
-import {route, middleware, hal, provides, api} from '../api';
+import {route, middleware, hal, provides, filter, api} from '../api';
 import {Method, LinkRelation, Hal} from '../types';
 
 // Middleware functions
@@ -34,14 +34,8 @@ function err(err: any, req: express.Request, res: express.Response, next: expres
     if (!res.locals.order) {
         res.locals.order = [];
     }
-
     res.locals.order.push('error');
-
-    // If we're in the async case, make sure we call done *after* we've hit the error handler
-    if ((req as any).done) {
-        (req as any).done();
-    }
-    
+    (req as any).resolve();
     next();
 }
 
@@ -176,6 +170,19 @@ class TestApi {
     Optional(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json(req.params);
     }
+
+    @route('GET', '/filter')
+    @middleware(first)
+    @filter(req => req.query['filter'] === 'true')
+    FilterFirst(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({ value: 'first' });
+    }
+
+    @route('GET', '/filter')
+    @middleware(second)
+    FilterSecond(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({ value: 'second' });
+    }
 };
 
 @provides(TestApiName, { href: TestApiDocs })
@@ -249,17 +256,22 @@ describe('HAL API Tests', () => {
     };
     let response: any;
     let request: any;
-    let result: Hal.Resource;
     let router: express.Router;
     let app: express.Application;
     
-    function call(method: string, url: string, done: Function) {
-        request.url = url;
-        request.method = method;
-        request.next = {};
-
-        app(request, response, <express.NextFunction>function(error: any){
-            done(error);
+    function call(method: string, url: string) {
+        return new Promise((resolve, reject) => {
+            let resfn = (body: any) => (resolve(body), response);
+            request = { url, method, next: {}, resolve };
+            response = {
+                locals: {},
+                json: resfn,
+                send: resfn,
+                setHeader: () => response,
+                type: () => response,
+                status: () => response
+            };
+            app(request, response, (error: any) => error ? reject(error) : resolve());
         });
     }
     
@@ -296,21 +308,6 @@ describe('HAL API Tests', () => {
     }
 
     beforeEach(() => {
-        request = {};
-        response = {};
-        response.locals = {};
-        response.json = (body: any) => {
-            result = body;
-            return response;
-        };
-        response.setHeader = () => response;
-        response.type = () => response;
-        response.status = () => response;
-        response.send = (body: any) => {
-            result = body;
-            return response;
-        };
-
         router = express();
         router.use('/test', route(server.test));
         router.use('/alt', route(server.alt));
@@ -324,180 +321,178 @@ describe('HAL API Tests', () => {
     });
 
     it('Should execute middleware in listed order', done => {
-        call('put', 'http://localhost/api/test/middleware', done);
-     
-        expect(response.locals.order[0]).toBe('class');
-        expect(response.locals.order[1]).toBe('first');
-        expect(response.locals.order[2]).toBe('second');
-        expect(response.locals.order[3]).toBe('error');
- 
-        done();
+        call('put', 'http://localhost/api/test/middleware').then(() => {
+
+            expect(response.locals.order[0]).toBe('class');
+            expect(response.locals.order[1]).toBe('first');
+            expect(response.locals.order[2]).toBe('second');
+            expect(response.locals.order[3]).toBe('error');
+
+        }).then(done).catch(done.fail);
     });
 
-    it('Should respond with native JSON when no Heatoes behavior defined', done => {
-        call('delete', 'http://localhost/api/test/NoHalBehavior', done);
-        
-        expect(result).toBeDefined();
-        expect(result._links).toBeFalsy();
-        
-        done();
+    it('Should respond with native JSON when no HAL behavior defined', done => {
+        call('delete', 'http://localhost/api/test/NoHalBehavior').then((result: Hal.Resource) => {
+
+            expect(result).toBeDefined();
+            expect(result._links).toBeFalsy();
+
+        }).then(done).catch(done.fail);
     });
     
     it('Should return expected HAL result', done => {
-        call('get', 'http://localhost/api/test/default?test=true', done);
+        call('get', 'http://localhost/api/test/default?test=true').then((result: Hal.Resource) => {
 
-        // Test _links
-        expect(result).toBeDefined();
-        expect(result._links).toBeDefined();
-        
-        // Test self link
-        expect(single(result._links, 'self').href).toBe('/api/test/default?test=true');
-        
-        // Test curies
-        testCuries(result, 0, TestApiName, TestApiTemplate);
-        testCuries(result, 1, AltApiName, AltApiDocs);
-        
-        // Test standard links
-        testStandardLink(result, TestApiName, 'mixed');
-        testStandardLink(result, TestApiName, 'middleware');
-        testStandardLink(result, TestApiName, 'NoHalBehavior');
-        
-        // Test link-relation links
-        expect(single(result._links, 'index').href).toBe('/api/test/index');
-        
-        // Test templated links
-        let templates = array(result._links, `${TestApiName}:template`);
-        expect(templates.length).toBe(2);
-        expect(templates[0].href).toBe('/api/test/template/{id}');
-        expect(templates[0].templated).toBe(true);
-        expect(templates[1].href).toBe('/api/test/template/name');
-        expect(templates[1].name).toBe('name');
+            // Test _links
+            expect(result).toBeDefined();
+            expect(result._links).toBeDefined();
+            
+            // Test self link
+            expect(single(result._links, 'self').href).toBe('/api/test/default?test=true');
+            
+            // Test curies
+            testCuries(result, 0, TestApiName, TestApiTemplate);
+            testCuries(result, 1, AltApiName, AltApiDocs);
+            
+            // Test standard links
+            testStandardLink(result, TestApiName, 'mixed');
+            testStandardLink(result, TestApiName, 'middleware');
+            testStandardLink(result, TestApiName, 'NoHalBehavior');
+            
+            // Test link-relation links
+            expect(single(result._links, 'index').href).toBe('/api/test/index');
+            
+            // Test templated links
+            let templates = array(result._links, `${TestApiName}:template`);
+            expect(templates.length).toBe(2);
+            expect(templates[0].href).toBe('/api/test/template/{id}');
+            expect(templates[0].templated).toBe(true);
+            expect(templates[1].href).toBe('/api/test/template/name');
+            expect(templates[1].name).toBe('name');
 
-        // Test query- and URI-templated links
-        let query = single(result._links, `${TestApiName}:query`);
-        expect(query.href).toBe('/api/test/query/{param}?q=0');
-        expect(query.templated).toBe(true);
-        
-        // Test duplicate links
-        let duplicates = array(result._links, `${TestApiName}:duplicate`);
-        expect(duplicates.length).toBe(2);
-        expect(duplicates[0].href).toBe('/api/test/duplicate');
-        expect(duplicates[1].href).toBe('/api/test/distinct');
-        
-        // Test added links
-        testStandardLink(result, TestApiName, 'extra');
-        expect(result._links![`${TestApiName}:override`]).toBeUndefined();
-        expect(single(result._links, `${TestApiName}:custom`).href).toBe('http://www.contoso.com');
-        let alternates = array(result._links, 'alternate');
-        expect(alternates.length).toBe(1);
-        expect(alternates[0].href).toBe('/api/test/override');
+            // Test query- and URI-templated links
+            let query = single(result._links, `${TestApiName}:query`);
+            expect(query.href).toBe('/api/test/query/{param}?q=0');
+            expect(query.templated).toBe(true);
+            
+            // Test duplicate links
+            let duplicates = array(result._links, `${TestApiName}:duplicate`);
+            expect(duplicates.length).toBe(2);
+            expect(duplicates[0].href).toBe('/api/test/duplicate');
+            expect(duplicates[1].href).toBe('/api/test/distinct');
+            
+            // Test added links
+            testStandardLink(result, TestApiName, 'extra');
+            expect(result._links![`${TestApiName}:override`]).toBeUndefined();
+            expect(single(result._links, `${TestApiName}:custom`).href).toBe('http://www.contoso.com');
+            let alternates = array(result._links, 'alternate');
+            expect(alternates.length).toBe(1);
+            expect(alternates[0].href).toBe('/api/test/override');
 
-        // Test shared-namespace links
-        expect(single(result._links, `${TestApiName}:extended`).href).toBe('/extended/extended');
-        
-        // Test embedded objects
-        expect(result._embedded).toBeDefined();
-        
-        let extraEmbedded = single(result._embedded, `${TestApiName}:extra`);
-        expect(extraEmbedded).toBeDefined();
-        expect(extraEmbedded['value']).toBe('test');
-        expect(extraEmbedded._links).toBeDefined();
-        expect(single(extraEmbedded._links, 'self').href).toBe('/api/test/extra');
-        testStandardLink(extraEmbedded, TestApiName, 'default');
-        
-        let customEmbedded = single(result._embedded, `${TestApiName}:custom`);
-        expect(customEmbedded).toBeDefined();
-        expect(customEmbedded['value']).toBe('test');
-        expect(customEmbedded._links).toBeDefined();
-        expect(customEmbedded._links!['self']).toBeUndefined();
-        testStandardLink(customEmbedded, TestApiName, 'override');
+            // Test shared-namespace links
+            expect(single(result._links, `${TestApiName}:extended`).href).toBe('/extended/extended');
+            
+            // Test embedded objects
+            expect(result._embedded).toBeDefined();
+            
+            let extraEmbedded = single(result._embedded, `${TestApiName}:extra`);
+            expect(extraEmbedded).toBeDefined();
+            expect(extraEmbedded['value']).toBe('test');
+            expect(extraEmbedded._links).toBeDefined();
+            expect(single(extraEmbedded._links, 'self').href).toBe('/api/test/extra');
+            testStandardLink(extraEmbedded, TestApiName, 'default');
+            
+            let customEmbedded = single(result._embedded, `${TestApiName}:custom`);
+            expect(customEmbedded).toBeDefined();
+            expect(customEmbedded['value']).toBe('test');
+            expect(customEmbedded._links).toBeDefined();
+            expect(customEmbedded._links!['self']).toBeUndefined();
+            testStandardLink(customEmbedded, TestApiName, 'override');
 
-        let parentEmbedded = single(result._embedded, `${TestApiName}:parent`);
-        expect(parentEmbedded).toBeDefined();
-        expect(parentEmbedded['value']).toBe('parent');
-        expect(parentEmbedded._links).toBeUndefined();
-        expect(parentEmbedded._embedded).toBeDefined();
+            let parentEmbedded = single(result._embedded, `${TestApiName}:parent`);
+            expect(parentEmbedded).toBeDefined();
+            expect(parentEmbedded['value']).toBe('parent');
+            expect(parentEmbedded._links).toBeUndefined();
+            expect(parentEmbedded._embedded).toBeDefined();
 
-        let childEmbedded = single(parentEmbedded._embedded, `${TestApiName}:child`);
-        expect(childEmbedded).toBeDefined();
-        expect(childEmbedded['value']).toBe('child');
-        expect(childEmbedded._links).toBeDefined();
-        expect(single(childEmbedded._links, 'self').href).toBe('/api/test/child');
-        expect(childEmbedded._links!['curies']).toBeUndefined();
-        testStandardLink(childEmbedded, AltApiName, 'cross');
- 
-        // Test content
-        expect(result['simple']).toBe('simple');
-        expect(result['complex']).toBeDefined();
-        expect(result['complex'].value).toBe('value');
+            let childEmbedded = single(parentEmbedded._embedded, `${TestApiName}:child`);
+            expect(childEmbedded).toBeDefined();
+            expect(childEmbedded['value']).toBe('child');
+            expect(childEmbedded._links).toBeDefined();
+            expect(single(childEmbedded._links, 'self').href).toBe('/api/test/child');
+            expect(childEmbedded._links!['curies']).toBeUndefined();
+            testStandardLink(childEmbedded, AltApiName, 'cross');
+    
+            // Test content
+            expect(result['simple']).toBe('simple');
+            expect(result['complex']).toBeDefined();
+            expect(result['complex'].value).toBe('value');
 
-        done();
+        }).then(done).catch(done.fail);
     });
     
     it('Cross-class rels should link properly', done => {
-        call('get', 'http://localhost/api/alt/cross', done);
+        call('get', 'http://localhost/api/alt/cross').then((result: Hal.Resource) => {
         
-        // Test curies
-        testCuries(result, 0, TestApiName, TestApiTemplate);
-     
-        // Test link
-        testStandardLink(result, TestApiName, 'default');
+            // Test curies
+            testCuries(result, 0, TestApiName, TestApiTemplate);
+        
+            // Test link
+            testStandardLink(result, TestApiName, 'default');
  
-        done();
+        }).then(done).catch(done.fail);
     });
     
     it('Discoverable routes should be discoverable', done => {
-        call('get', 'http://localhost/api/', done);
+        call('get', 'http://localhost/api/').then((result: Hal.Resource) => {
         
-        // Test _links
-        expect(result).toBeDefined();
-        expect(result._links).toBeDefined();
+            // Test _links
+            expect(result).toBeDefined();
+            expect(result._links).toBeDefined();
+            
+            // Test curies
+            testCuries(result, 0, TestApiName, TestApiTemplate);
+            testCuries(result, 1, AltApiName, AltApiDocs);
         
-        // Test curies
-        testCuries(result, 0, TestApiName, TestApiTemplate);
-        testCuries(result, 1, AltApiName, AltApiDocs);
-     
-        // Test links
-        testStandardLink(result, TestApiName, 'default');
-        testStandardLink(result, AltApiName, 'cross');
+            // Test links
+            testStandardLink(result, TestApiName, 'default');
+            testStandardLink(result, AltApiName, 'cross');
         
-        done();
+        }).then(done).catch(done.fail);
     });
     
     it('Parameters should fall through to subsequent links', done => {
-        call('get', 'http://localhost/api/test/fallthrough/name', done);
+        call('get', 'http://localhost/api/test/fallthrough/name').then((result: Hal.Resource) => {
         
-        // Test _links
-        expect(result).toBeDefined();
-        expect(result._links).toBeDefined();
-        expect(single(result._links, `${TestApiName}:template`).href).toBe('/api/test/template/name');
-        expect(result._links!['self']).toBeUndefined();
+            // Test _links
+            expect(result).toBeDefined();
+            expect(result._links).toBeDefined();
+            expect(single(result._links, `${TestApiName}:template`).href).toBe('/api/test/template/name');
+            expect(result._links!['self']).toBeUndefined();
  
-        done();
+        }).then(done).catch(done.fail);
     });
 
     it('Ensure async, query-parameter, and URI-templated routes are callable', done => {
-        request.done = (error: any) => {
-            if (!error) {
-                expect(response.locals.param).toBe('param');
-            }
-            done(error);
-        };
-        call('get', 'http://localhost/api/test/query/param?q=value', done);
+        call('get', 'http://localhost/api/test/query/param?q=value').then(() => {
+
+            expect(response.locals.param).toBe('param');
+            
+        }).then(done).catch(done.fail);
     });
 
     it('Ensure optional routes are callable in both forms', done => {
-        call('get', 'http://localhost/api/test/optional', done);
+        call('get', 'http://localhost/api/test/optional').then((result: any) => {
 
-        expect(result).toBeDefined();
-        expect((result as any).value).toBeUndefined();
+            expect(result).toBeDefined();
+            expect(result.value).toBeUndefined();
 
-        call('get', 'http://localhost/api/test/optional/value', done);
+        }).then(() => call('get', 'http://localhost/api/test/optional/value')).then((result: any) => {
 
-        expect(result).toBeDefined();
-        expect((result as any).value).toBe('value');
+            expect(result).toBeDefined();
+            expect(result.value).toBe('value');
 
-        done();
+        }).then(done).catch(done.fail);
     });
 
     it('Dynamic decorators function as well as the standard decorators', done => {
@@ -511,55 +506,76 @@ describe('HAL API Tests', () => {
 
         router.use('/dynamic', route(server.dynamic));
 
-        call('get', 'http://localhost/api/dynamic/handler', done);
+        call('get', 'http://localhost/api/dynamic/handler').then((result: Hal.Resource) => {
 
-        // Test _links
-        expect(result).toBeDefined();
-        expect(result._links).toBeDefined();
+            // Test _links
+            expect(result).toBeDefined();
+            expect(result._links).toBeDefined();
+            
+            // Test self link
+            expect(single(result._links, 'self').href).toBe('/api/dynamic/handler');
+
+            // Test curies
+            testCuries(result, 0, TestApiName, TestApiTemplate);
+            testCuries(result, 1, ParentApiName, '/api/dynamic' + ParentApiDocs);
         
-        // Test self link
-        expect(single(result._links, 'self').href).toBe('/api/dynamic/handler');
+            // Test dynamic link
+            testStandardLink(result, TestApiName, 'default');
 
-        // Test curies
-        testCuries(result, 0, TestApiName, TestApiTemplate);
-        testCuries(result, 1, ParentApiName, '/api/dynamic' + ParentApiDocs);
-     
-        // Test dynamic link
-        testStandardLink(result, TestApiName, 'default');
+            // Test inherited link
+            expect(single(result._links, `${ParentApiName}:inherited`).href).toBe('/api/dynamic/inherited');
 
-        // Test inherited link
-        expect(single(result._links, `${ParentApiName}:inherited`).href).toBe('/api/dynamic/inherited');
+            // Test execution order
+            expect(response.locals.order[0]).toBe('class');
+            expect(response.locals.order[1]).toBe('first');
+            expect(response.locals.order[2]).toBe('second');
 
-        // Test execution order
-        expect(response.locals.order[0]).toBe('class');
-        expect(response.locals.order[1]).toBe('first');
-        expect(response.locals.order[2]).toBe('second');
-
-        done();
+        }).then(done).catch(done.fail);
     });
 
     it('Overridden rels do not provide their original CURIEs', done => {
-        call('get', `http://localhost/api/list/list`, done);
+        call('get', `http://localhost/api/list/list`).then((result: Hal.Resource) => {
 
-        // Test _links
-        expect(result).toBeDefined();
-        expect(result._links).toBeDefined();
+            // Test _links
+            expect(result).toBeDefined();
+            expect(result._links).toBeDefined();
 
-        // CURIEs do not get populated...
-        expect(result._links!['curies']).toBeUndefined();
+            // CURIEs do not get populated...
+            expect(result._links!['curies']).toBeUndefined();
 
-        // ... but the links do
-        expect(array(result._links, 'item')[0].href).toBe('/api/list/item');
+            // ... but the links do
+            expect(array(result._links, 'item')[0].href).toBe('/api/list/item');
 
-        done();
+        }).then(done).catch(done.fail);
     });
 
     it('Automatic documentation works as expected', done => {
-        call('get', `http://localhost/api/list/docs/list/item`, done);
+        call('get', `http://localhost/api/list/docs/list/item`).then((result: string) => {
 
-        // Test basic automatic documentation
-        expect((result as string).replace(/&#x2F;/g, '/')).toBe(`<h1>/api/list/item</h1><h2>GET</h2><p>${AutoDocDescription}</p>`);
+            // Test basic automatic documentation
+            expect(result.replace(/&#x2F;/g, '/')).toBe(`<h1>/api/list/item</h1><h2>GET</h2><p>${AutoDocDescription}</p>`);
 
-        done();
+        }).then(done).catch(done.fail);
+    });
+
+    it('Filter decorators work as expected', done => {
+        call('get', 'http://localhost/api/test/filter?filter=true').then((result: any) => {
+
+            expect((result as any).value).toBe('first');
+
+            expect(response.locals.order[0]).toBe('class');
+            expect(response.locals.order[1]).toBe('first');
+            expect(response.locals.order[2]).toBeUndefined();
+
+        }).then(() => call('get', 'http://localhost/api/test/filter?filter=false')).then((result: any) => {
+
+            expect(result.value).toBe('second');
+
+            expect(response.locals.order[0]).toBe('class');
+            expect(response.locals.order[1]).toBe('first');
+            expect(response.locals.order[2]).toBe('second');
+            expect(response.locals.order[3]).toBeUndefined();
+
+        }).then(done).catch(done.fail);
     });
 });

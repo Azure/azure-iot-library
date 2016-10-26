@@ -4,7 +4,7 @@ import * as express from 'express';
 import * as url from 'url';
 import * as mustache from 'mustache';
 
-import {LinkRelation, Rel, Method} from './constants';
+import {LinkRelation, Rel, Verb} from './constants';
 import {Response} from './response';
 import {provides, hal} from './decorators';
 import {Api} from './api';
@@ -42,13 +42,15 @@ export class Server {
             }
             api = target[Server.Class];
         } else {
+            const name = method.toString();
             if (!target.hasOwnProperty(Server.Methods)) {
-                target[Server.Methods] = {};
+                target[Server.Methods] = [];
             }
-            if (!target[Server.Methods][method]) {
-                target[Server.Methods][method] = new Api.Method(method.toString(), decorator);
+            api = target[Server.Methods].find((method: Api.Method) => method.name === name);
+            if (!api) {
+                api = new Api.Method(name, decorator);
+                target[Server.Methods].push(api);
             }
-            api = target[Server.Methods][method];
         }
         return api;
     }
@@ -81,58 +83,66 @@ export class Server {
     }
 
     // Register all data for a single handler method
-    private static register(server: Object, method: Arguments.Method, app: express.Application, handler: express.RequestHandler) {
-        // Merge hal and middleware decorator calls
-        const hal = {
-            links: new Set(method.hal.reduce<Rel[]>((links, hal) => links.concat(hal.links), [])),
-            options: method.hal.reduce((options, hal) => Object.assign(options, hal.options), {}) as hal.Options
+    private static register(server: Object, handler: Server.Handler): express.RequestHandler[] {
+        // Merge and normalize decorator arguments
+        const route = {
+            verb: Verb.stringify(handler.args.route[0].verb),
+            path: handler.args.route[0].path
         };
-        const middleware = method.middleware.map(middleware => middleware.handler);
+        const hal = {
+            links: new Set(handler.args.hal.reduce<Rel[]>((links, hal) => links.concat(hal.links), [])),
+            options: handler.args.hal.reduce((options, hal) => Object.assign(options, hal.options), {}) as hal.Options
+        };
+        const middleware = handler.args.middleware.map(middleware => middleware.handler);
+        const filter = handler.args.filter.map(filter => filter.filter);
 
-        // If a self rel has been explicitly requested, add it to the links
-        if (hal.options.self) {
+        // If a self rel has been explicitly requested or this route requires an automatic default 'self' rel,
+        // add it to the links
+        if (hal.options.self || (typeof hal.options.self === 'undefined' && route.verb === 'GET')) {
             hal.links.add(LinkRelation.Self);
         }
 
-        // Transform all route verbs into their string equivalents
-        const routes = method.route.map(route => ({
-            verb: typeof route.verb === 'string' ? (route.verb as string).toUpperCase() : Method[route.verb],
-            path: route.path
-        }));
+        // Map the links back into an array for the handlers
+        const links = Array.from(hal.links);
 
-        for (let route of routes) {
-            if (app[route.verb.toLowerCase()]) {
-                // If this route requires an automatic default 'self' rel, add it
-                const links = Array.from(typeof hal.options.self === 'undefined' && route.verb === 'GET' ?
-                    (new Set(hal.links)).add(LinkRelation.Self) : hal.links);
-
-                // If this method provides rels, map them for quick access
-                for (let provides of method.provides) {
-                    let template = Template.apply(route.path, provides.options.params || {});
-                    Server.linker.registerLink(server, provides.rel, template, Object.assign({
-                        verb: route.verb,
-                        href: route.path,
-                        links
-                    }, provides.options));
-                }
-
-                // If this is a HAL handler, add middleware that will transmute the response object into a HAL response
-                // (with the current links for this route)
-                const handlers = method.hal.length === 0 ? middleware : [
-                    (req: express.Request, res: express.Response, next: express.NextFunction) =>
-                        Response.create(server, path(req), links, req, res) && next()
-                ].concat(middleware);
-                
-                app[route.verb.toLowerCase()].call(app, Template.express(route.path), handlers, handler);
-            } else {
-                console.error(`${route.verb} is not a valid HTTP method.`);
-            }
+        // If this method provides rels, map them for quick access
+        for (let provides of handler.args.provides) {
+            let template = Template.apply(route.path, provides.options.params || {});
+            Server.linker.registerLink(server, provides.rel, template, Object.assign({
+                verb: route.verb,
+                href: route.path,
+                links
+            }, provides.options));
         }
+
+        // Bind the handlers in promises; Express does not use the return values of its handlers, 
+        // and this allows us to properly catch error results from async methods (success results
+        // are already supported via the next() or res callbacks)
+        let handlers: express.RequestHandler[] = middleware.map(cb =>
+            (req: express.Request, res: express.Response, next: express.NextFunction) =>
+                Promise.resolve(cb(req, res, next)).catch(next));
+
+        // If this is a HAL handler, add middleware that will transmute the response object into a HAL response
+        handlers = handler.args.hal.length === 0 ? handlers : [
+            (req: express.Request, res: express.Response, next: express.NextFunction) =>
+                Response.create(server, path(req), links, req, res) && next()
+        ].concat(handlers);
+
+        // Generate middleware from the filter callbacks
+        handlers = handlers.concat(filter.map(cb =>
+            (req: express.Request, res: express.Response, next: express.NextFunction) =>
+                Promise.resolve(cb(req)).then(ret => ret ? next() : next('route')).catch(next)));
+
+        // Add the actual route handler method (supporting async, as above)
+        handlers.push((req: express.Request, res: express.Response, next: express.NextFunction) =>
+                Promise.resolve(server[handler.name](req, res, next)).catch(next));
+
+        return handlers;
     }
 
     // Merge class and instance decorators to support prototype inheritance
-    private static proto(target: Object): Arguments.Class & { methods: { [method: string]: Api.Method } } {
-        let proto: Arguments.Class & { methods: { [method: string]: Api.Method } } = { provides: [], middleware: [], methods: {} };
+    private static proto(target: Object): Arguments.Class & { methods: Api.Method[] } {
+        let proto: Arguments.Class & { methods: Api.Method[] } = { provides: [], middleware: [], methods: [] };
 
         // Walk down the prototype chain and merge class decorators
         let prototype = target;
@@ -142,7 +152,7 @@ export class Server {
                 proto.middleware = proto.middleware.concat(prototype[Server.Class][Arguments.Stack].middleware);
             }
             if (prototype.hasOwnProperty(Server.Methods)) {
-                proto.methods = Object.assign({}, prototype[Server.Methods], proto.methods);
+                proto.methods = proto.methods.concat(prototype[Server.Methods]);
             }
             prototype = Object.getPrototypeOf(prototype);
         }
@@ -180,15 +190,25 @@ export class Server {
                 app.use(middleware.handler);
             }
 
-            // Resolve individual routes
-            for (let methodName in proto.methods) {
-                Server.register(server, proto.methods[methodName][Arguments.Stack], app,
-
-                    // Bind the handler in a promise; Express does not use the return values of its handlers, 
-                    // and this allows us to properly catch error results from async methods
-                    (req: express.Request, res: express.Response, next: express.NextFunction) =>
-                        Promise.resolve(server[methodName](req, res, next)).catch(next)
-                );
+            // Sort the methods into normalized route handlers
+            let routes: Server.Route[] = [];
+            for (let method of proto.methods) {
+                for (let route of method[Arguments.Stack].route) {
+                    routes.push({
+                        verb: Verb.stringify(route.verb).toLowerCase(),
+                        path: Template.express(route.path),
+                        handler: { name: method.name, args: Object.assign({}, method[Arguments.Stack], { routes: [route] }) }
+                    });
+                }
+            }
+            
+            // Register individual routes
+            for (let route of routes) {
+                if (app[route.verb]) {
+                    app[route.verb].call(app, route.path, ...Server.register(server, route.handler));
+                } else {
+                    console.error(`${route.verb.toUpperCase()} is not a valid HTTP method.`);
+                }
             }
             
             // Resolve server-wide error-handling middleware
@@ -230,6 +250,17 @@ export class Server {
 export namespace Server {
     export interface Link extends hal.Overrides, provides.Options.Rel {
         verb?: string;
+    }
+
+    export interface Handler {
+        name: string;
+        args: Arguments.Method;
+    }
+
+    export interface Route {
+        verb: string;
+        path: string;
+        handler: Handler;
     }
 
     export const App = Symbol();

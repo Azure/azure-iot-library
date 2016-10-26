@@ -50,6 +50,10 @@ Indicates a rel this handler provides; it can be used multiple times, and omitti
 Indicates Express-style middleware to use with this route; it can be used multiple times to add more than one middleware function per route.
 * `handler` [express.RequestHandler]: The Express-style middleware function.
 
+#### `@filter(filter)`
+Provides a filter function on the route handler, allowing multiple handlers to exist on the same route, filtered by the request. The filters are called after all other middleware, so any modifications made to the request (by the middleware on this handler or any previous filtered-out handlers on the same route) will have occurred by the time the filter is processed. In addition, a filtered-out route will continue to be processed by all further routes, meaning a filtered-out fixed route (eg. '/fixed') may fall through to an equivalent parameterized route (eg. '/:param'). 
+* `filter` [(req: express.Request) => boolean]: The filter function; a return value of true will call the current method (or the next filter on the current method); false will continue to the next method block.
+
 #### `@hal(...rels, [options])`
 Indicates that this method should return a HAL response; ommitting it will cause this handler to act as a normal Express handler rather than a HAL handler. It causes the response object passed to the handler to have additional functionality as specified by the `hal.Reponse` interface.
 * `rels` [string | LinkRelation]: Any number of rels that should always be returned as links in the HAL response; these can consist of:

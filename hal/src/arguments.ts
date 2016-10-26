@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {Rel, Verb} from './constants';
-import {provides, middleware, hal} from './decorators';
+import {provides, middleware, filter, hal} from './decorators';
 
 // Provides interfaces for storing the arguments of the decorator callstacks
 // NOTE: These should be aligned with the arguments of the decorators and the Api classes
@@ -28,6 +28,7 @@ export namespace Arguments {
         route: Method.Route[];
         provides: Method.Provides[];
         middleware: Method.Middleware[];
+        filter: Method.Filter[];
         hal: Method.Hal[];
     }
 
@@ -42,6 +43,9 @@ export namespace Arguments {
         }
         export interface Middleware {
             handler: express.RequestHandler;
+        }
+        export interface Filter {
+            filter: filter.Filter;
         }
         export interface Hal {
             links: Rel[];

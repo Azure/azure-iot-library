@@ -11,6 +11,12 @@ export enum Method {
 
 export type Verb = string | Method;
 
+export namespace Verb {
+    export function stringify(verb: Verb): string {
+        return typeof verb === 'string' ? verb.toUpperCase() : Method[verb];
+    }
+}
+
 // Well-defined link relations according to http://www.iana.org/assignments/link-relations/link-relations.xhtml
 export enum LinkRelation {
     About = 1,

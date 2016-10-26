@@ -16,6 +16,11 @@ function ensureArray<T>(set: { [rel: string]: T | T[] } = {}, rel: string, ensur
     }
 }
 
+// Log an error message for an unresolvable rel
+function unresolvableRel(res: hal.Response, rel: Rel) {
+    console.error(`Cannot find rel: ${Rel.stringify(Server.linker.normalize(_private(res).server, rel))}`);
+}
+
 // Provides HAL functionality to be embedded in an Express response object
 export class Response implements hal.Response {
     // Generate a HAL response object, either for the root response object (if root and data are not specified),
@@ -129,7 +134,7 @@ export class Response implements hal.Response {
                 _private(this).hal.addLink(str, Template.link(resolved));
                 ensureArray(_private(this).hal._links, str, resolved.array);
             } else {
-                console.error(`Cannot find rel: ${Rel.stringify(Server.linker.normalize(_private(this).server, rel))}`);
+                unresolvableRel(this, rel);
             }
         });
     }
@@ -147,6 +152,7 @@ export class Response implements hal.Response {
             return resource;
         } else {
             // If we failed to resolve the rel, return a dummy HAL resource object, but do not embed it
+            unresolvableRel(this, rel);
             return Response.resource(
                 Object.assign({ server: _private(this).server, params: _private(this).params }, overrides),
                 _private(this).root, value);

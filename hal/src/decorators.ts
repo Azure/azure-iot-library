@@ -103,6 +103,18 @@ export namespace middleware {
     }
 }
 
+export function filter(filter: filter.Filter): MethodDecorator {
+    return function (target: Object, methodName: string | symbol, descriptor: ExpressHandlerDescriptor): ExpressHandlerDescriptor | void {
+        // -- Method decorator --
+        Server.api(true, target, methodName).filter(filter);
+        return descriptor;
+    };
+}
+
+export namespace filter {
+    export type Filter = (req: express.Request) => boolean;
+}
+
 export function api(server: Object): Api.Class;
 export function api(server: Object, method: string | symbol): Api.Method;
 export function api(server: Object, method?: string | symbol): Api.Class | Api.Method {

@@ -1,7 +1,7 @@
 {
   "name": "@azure-iot/hal",
   "description": "Decorator library for HAL-based routes",
-  "version": "1.0.0-rc.15",
+  "version": "1.0.0-rc.16",
   "scripts": {
     "prebuild": "npm run lint",
     "build": "tsc",
