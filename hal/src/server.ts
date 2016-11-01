@@ -4,7 +4,7 @@ import * as express from 'express';
 import * as url from 'url';
 import * as mustache from 'mustache';
 
-import {LinkRelation, Rel, Verb} from './constants';
+import {LinkRelation, Rel, Verb, Template as Format} from './constants';
 import {Response} from './response';
 import {provides, hal} from './decorators';
 import {Api} from './api';
@@ -56,7 +56,7 @@ export class Server {
     }
     
     // Generate an automated documentation Express handler for the given namespace
-    private static autodoc(app: express.Application, ns: string, template: string): express.RequestHandler {
+    private static autodoc(app: express.Application, args: Arguments.Class.Provides): express.RequestHandler {
         return (req: express.Request, res: express.Response, next: express.NextFunction) => {
             // If a rel was not provided, this is not a valid documentation call
             const rel = req.params[Rel.Param];
@@ -65,7 +65,7 @@ export class Server {
             }
 
             // For each possible route in the resolved rel, format the route and all available methods
-            const routes = Server.linker.handle({}, ns + ':' + rel, (server: Object, route: string, links: Server.Link[]) => ({
+            const routes: Format.Route[] = Server.linker.handle({}, args.namespace + ':' + rel, (server: Object, route: string, links: Server.Link[]) => ({
                 href: relative(app, route),
                 methods: links.map(link => ({
                     verb: link.verb,
@@ -73,9 +73,13 @@ export class Server {
                 }))
             }));
 
+            // Generate a standard formatting object, calling the fallback if necessary
+            const format: Format = Object.assign({ ns: args.namespace, rel, routes },
+                routes.length === 0 && args.options.fallback ? args.options.fallback(args.namespace, rel) : {});
+
             // If no routes were found, assume this was not a valid rel
-            if (routes.length > 0) {
-                res.status(200).send(mustache.render(template, { ns, rel, routes }));
+            if (format.routes && format.routes.length > 0) {
+                res.status(200).send(mustache.render(args.options.template || template, format));
             } else {
                 res.sendStatus(404);
             }
@@ -181,7 +185,7 @@ export class Server {
 
                 // Register automatically-generated documentation
                 if ((typeof provides.options.auto === 'undefined' && typeof provides.options.href === 'undefined') || provides.options.auto) {
-                    app.get(Template.express(href), Server.autodoc(app, provides.namespace, provides.options.template || template));
+                    app.get(Template.express(href), Server.autodoc(app, provides));
                 }
             }
 
@@ -249,7 +253,7 @@ export class Server {
 
 export namespace Server {
     export interface Link extends hal.Overrides, provides.Options.Rel {
-        verb?: string;
+        verb: string;
     }
 
     export interface Handler {

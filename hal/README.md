@@ -20,7 +20,8 @@ Associates a HAL namespace and documentation with this server class. It can be u
 * `options` [provides.Options.Namespace] *(optional)*:
     * `href` [string]: The documentation link representing this namespace; this contains the placeholder 'rel' for the rels provided by the routes of this server, as per the HAL spec. It can accept either URI-template or Express syntax, as per the `@route` decorator. Default is '/docs/&lt;namespace&gt;/:rel'.
     * `auto` [boolean]: Indicates whether to automatically generate documentation from the `description` attributes, described below; default is false if `href` is specified, true otherwise.
-    * `template` [string]: A [Mustache](https://mustache.github.io/) template used to format the automatically-generated documentation. The format of the provided object is specified below.
+    * `template` [string]: A [Mustache](https://mustache.github.io/) template used to format the automatically-generated documentation. The format of the provided object is the `Template` type, specified below.
+    * `fallback` [(ns: string, rel: string) => Template]: A callback to handle automatically-generated documentation rels that are not predefined by the service. It is provided the namespace and rel, and should return the data to be passed to the formatting template. If no routes are provided, the documentation call will be treated as a 404.
 
 #### `@middleware(handler, [options])`
 Indicates Express-style middleware to use with this server; it can be used multiple times to add more than one middleware function per server.
@@ -114,8 +115,8 @@ An interface representing the form of a HAL reponse or embedded HAL object.
 #### `Hal.Link`
 An interface representing the form of a HAL link. 
 
-### Template Input Format
-
+#### `Template`
+The object provided to the Mustache template for automatically-generated documentation.
 ```js
 {
     ns: "...", // the namespace being provided

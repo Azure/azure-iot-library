@@ -1,5 +1,7 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
+import {provides} from './decorators';
+
 // Most common HTTP verbs, provided as a convenience
 export enum Method {
     GET = 1,
@@ -133,5 +135,23 @@ export namespace Hal {
     export interface Resource {
         _links?: Links;
         _embedded?: Embedded;
+    }
+}
+
+export interface Template {
+    ns?: string;
+    rel?: string;
+    routes?: Template.Route[];
+}
+
+export namespace Template {
+    export interface Route {
+        href: string;
+        methods: Method[];
+    }
+
+    export interface Method {
+        verb: string;
+        options: provides.Options.Rel;
     }
 }

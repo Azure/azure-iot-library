@@ -1,1 +1,1 @@
-export {Method, LinkRelation, Hal} from './src/constants';
+export {Method, LinkRelation, Hal, Template} from './src/constants';

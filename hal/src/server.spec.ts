@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {route, middleware, hal, provides, filter, api} from '../api';
-import {Method, LinkRelation, Hal} from '../types';
+import {Method, LinkRelation, Hal, Template} from '../types';
 
 // Middleware functions
 function first(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -225,11 +225,32 @@ class DynamicApi extends ParentApi {
     }
 }
 
-let AutoDocDescription = 'A description for automatic documentation.';
-@provides('list')
+let AutoDoc = {
+    description: 'A description for automatic documentation.',
+    fallback: {
+        rel: 'fallback',
+        href: '/fallback',
+        verb: 'GET',
+        description: 'A fallback description for automatic documentation.'
+    }
+};
+function FallbackCallback(ns: string, rel: string): Template {
+    return rel !== AutoDoc.fallback.rel ? {} : {
+        routes: [{
+            href: AutoDoc.fallback.href,
+            methods: [{
+                verb: AutoDoc.fallback.verb,
+                options: {
+                    description: AutoDoc.fallback.description
+                }
+            }]
+        }]
+    };
+}
+@provides('list', { fallback: FallbackCallback })
 class ListApi {
     @route(Method.GET, '/item')
-    @provides('item', { description: AutoDocDescription, array: true })
+    @provides('item', { description: AutoDoc.description, array: true })
     Item(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
@@ -553,7 +574,17 @@ describe('HAL API Tests', () => {
         call('get', `http://localhost/api/list/docs/list/item`).then((result: string) => {
 
             // Test basic automatic documentation
-            expect(result.replace(/&#x2F;/g, '/')).toBe(`<h1>/api/list/item</h1><h2>GET</h2><p>${AutoDocDescription}</p>`);
+            expect(result.replace(/&#x2F;/g, '/')).toBe(`<h1>/api/list/item</h1><h2>GET</h2><p>${AutoDoc.description}</p>`);
+
+        }).then(() => call('get', `http://localhost/api/list/docs/list/${AutoDoc.fallback.rel}`)).then((result: any) => {
+
+            // Test fallback automatic documentation
+            expect(result.replace(/&#x2F;/g, '/')).toBe(`<h1>${AutoDoc.fallback.href}</h1><h2>${AutoDoc.fallback.verb}</h2><p>${AutoDoc.fallback.description}</p>`);
+
+        }).then(() => call('get', `http://localhost/api/list/docs/list/invalid`)).then((result: any) => {
+
+            // Test invalid automatic documentation
+            expect(result).toBe('Not Found');
 
         }).then(done).catch(done.fail);
     });

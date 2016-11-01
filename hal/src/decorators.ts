@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {Server} from './server';
-import {Verb, Rel} from './constants';
+import {Verb, Rel, Template} from './constants';
 import {Api} from './api';
 
 type ExpressHandlerDescriptor = TypedPropertyDescriptor<express.RequestHandler>;
@@ -32,6 +32,7 @@ export namespace provides {
             href?: string;
             auto?: boolean;
             template?: string;
+            fallback?: (ns: string, rel: string) => Template;
         };
     }
 }
