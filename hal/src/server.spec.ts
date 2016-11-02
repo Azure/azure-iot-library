@@ -228,6 +228,7 @@ class DynamicApi extends ParentApi {
 
 let AutoDoc = {
     description: 'A description for automatic documentation.',
+    path: `/docs/list/{rel}`,
     fallback: {
         rel: 'fallback',
         href: '/fallback',
@@ -252,11 +253,13 @@ function FallbackCallback(ns: string, rel: string): Template {
 class ListApi {
     @route(Method.GET, '/item')
     @provides('item', { description: AutoDoc.description, array: true })
-    Item(req: express.Request, res: express.Response, next: express.NextFunction) {
+    @hal('list')
+    Item(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         res.json({});
     }
 
     @route(Method.GET, '/list')
+    @provides('list')
     @hal()
     List(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         res.link('item', {
@@ -329,7 +332,7 @@ describe('HAL API Tests', () => {
         expect(curies[index].templated).toBe(true);
     }
 
-    beforeEach(() => {
+    (function beforeAll() {
         router = express();
         router.use('/test', route(server.test));
         router.use('/alt', route(server.alt));
@@ -340,7 +343,7 @@ describe('HAL API Tests', () => {
         app = express();
         app.use('/api', router);
         app.use('/extended', route(server.extended));
-    });
+    })();
 
     it('Should execute middleware in listed order', done => {
         call('put', 'http://localhost/api/test/middleware').then(() => {
@@ -567,6 +570,28 @@ describe('HAL API Tests', () => {
 
             // ... but the links do
             expect(array(result._links, 'item')[0].href).toBe('/api/list/item');
+
+        }).then(done).catch(done.fail);
+    });
+
+    it('CURIEs are constant over multiple calls', done => {
+        call('get', `http://localhost/api/list/item`).then((result: Hal.Resource) => {
+
+            // Test _links
+            expect(result).toBeDefined();
+            expect(result._links).toBeDefined();
+
+            // Test CURIEs
+            testCuries(result, 0, 'list', '/api/list' + AutoDoc.path);
+
+        }).then(() => call('get', `http://localhost/api/list/item`)).then((result: Hal.Resource) => {
+
+            // Test _links
+            expect(result).toBeDefined();
+            expect(result._links).toBeDefined();
+
+            // Test CURIEs
+            testCuries(result, 0, 'list', '/api/list' + AutoDoc.path);
 
         }).then(done).catch(done.fail);
     });
