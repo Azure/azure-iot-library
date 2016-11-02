@@ -18,7 +18,7 @@ Clone and run `npm install`.
 Associates a HAL namespace and documentation with this server class. It can be used multiple times; the first namespace provided will be treated as the default namespace for any non-namespaced rels used within this server.
 * `ns` [string]: The namespace's name.
 * `options` [provides.Options.Namespace] *(optional)*:
-    * `href` [string]: The documentation link representing this namespace; this contains the placeholder 'rel' for the rels provided by the routes of this server, as per the HAL spec. It can accept either URI-template or Express syntax, as per the `@route` decorator. Default is '/docs/&lt;namespace&gt;/:rel'.
+    * `href` [string | Url]: The documentation link representing this namespace; this contains the placeholder 'rel' for the rels provided by the routes of this server, as per the HAL spec. It can accept either URI-template or Express syntax, as per the `@route` decorator. Default is '/docs/&lt;namespace&gt;/:rel'.
     * `auto` [boolean]: Indicates whether to automatically generate documentation from the `description` attributes, described below; default is false if `href` is specified, true otherwise.
     * `template` [string]: A [Mustache](https://mustache.github.io/) template used to format the automatically-generated documentation. The format of the provided object is the `Template` type, specified below.
     * `fallback` [(ns: string, rel: string) => Template]: A callback to handle automatically-generated documentation rels that are not predefined by the service. It is provided the namespace and rel, and should return the data to be passed to the formatting template. If no routes are provided, the documentation call will be treated as a 404.
@@ -34,7 +34,7 @@ Indicates Express-style middleware to use with this server; it can be used multi
 #### `@route(method, path)`
 Indicates that the following method provides an Express or HAL route handler.
 * `method` [string | Method]: The HTTP method from the `Method` enum or as a string.
-* `path` [string]: The route path for this handler. Express-style paths and level-1 URI templated paths (as per [RFC 6570](https://tools.ietf.org/html/rfc6570)) are supported.
+* `path` [string | Url]: The route path for this handler. Express-style paths and level-1 URI templated paths (as per [RFC 6570](https://tools.ietf.org/html/rfc6570)) are supported.
 
 #### `@provides(rel, [options])`
 Indicates a rel this handler provides; it can be used multiple times, and omitting it will prevent HAL responses from automatically linking to this route's path.
@@ -72,7 +72,7 @@ The additional functionality added to the `express.Response` object by the `@hal
     * `rel` [string | LinkRelation]: The rel to add, as per the arguments to the `@hal` decorator.
     * `overrides` [hal.Overrides] *(optional)*: Allows you to override the default behavior for the following:
         * `rel` [string | LinkRelation]: The HAL response will include the link under this rel, though the href will still be populated automatically as normal.
-        * `href` [string]: The HAL response will use the provided href for this rel, rather than the server-provided one.
+        * `href` [string | Url]: The HAL response will use the provided href for this rel, rather than the server-provided one. If a Url object is provided, it will be merged with the server-provided href before being resolved.
         * `server` [Object]: The server class used for non-namespaced and standard rels.
         * `links` [Array&lt;string | LinkRelation&gt;]: The array of rels associated with this link. This corresponds to the array of rels provided to the `@hal` decorator for this link, plus the 'self' rel if it would typically be present, and is used for link embedding when necessary.
         * `params` [any]: The href will be populated using this params object, rather than the one from the request.
@@ -85,7 +85,7 @@ The additional functionality added to the `express.Response` object by the `@hal
     * `overrides` [hal.Overrides] *(optional)*: Allows you to override the default behavior of the rel, as described above.
 * `docs(ns, href)`: Manually adds documentation CURIEs to the response. Normally, these are populated automatically from the associated servers of the included rels; however, if this response includes rels that are not provided by servers in this service, this can be used to include the CURIEs manually.
     * `ns` [string]: The namespace of this documentation.
-    * `href` [string]: The documentation link representing this namespace; as per HAL.
+    * `href` [string | Url]: The documentation link representing this namespace; as per HAL.
 
 ### Functions
 

@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {provides, middleware, filter, hal} from './decorators';
-import {Verb, Rel} from './constants';
+import {Verb, Rel, Href} from './constants';
 import {Arguments} from './arguments';
 
 // Decorators are called in reverse order, whereas methods are called in the expected order;
@@ -64,7 +64,7 @@ export namespace Api {
             return this;
         }
 
-        route(verb: Verb, path: string): this {
+        route(verb: Verb, path: Href): this {
             add<Arguments.Method.Route>(this, 'route', { verb, path });
             return this;
         }

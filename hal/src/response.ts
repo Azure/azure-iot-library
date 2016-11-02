@@ -2,10 +2,11 @@
 
 import * as express from 'express';
 import * as halson from 'halson';
+import * as url from 'url';
 
 import {Server} from './server';
 import {Template} from './template';
-import {Rel, LinkRelation, Hal} from './constants';
+import {Rel, LinkRelation, Hal, Href} from './constants';
 import {hal} from './decorators';
 
 // Conditionally ensure this link or embed is an array, even if it's only a single item
@@ -100,6 +101,12 @@ export class Response implements hal.Response {
         return (links.length > 0 ? links : [{}]).map(link => {
             // Splice the automatic link resolution with the overrides
             let resolved = Object.assign({}, base, link, overrides);
+
+            // If we are overriding with a URL object, splice it into the resolved href
+            if (overrides.href && typeof overrides.href === 'object') {
+                // Internally-resolved links are guaranteed to be strings
+                resolved.href = Object.assign(url.parse(link.href! as string), overrides.href);
+            }
             
             // Unless they were overridden, params should be a union of the provided params
             if (!overrides.params) {
@@ -160,7 +167,7 @@ export class Response implements hal.Response {
     }
     
     // Add a documentation link to the HAL response
-    docs(name: string, href: string) {
+    docs(name: string, href: Href) {
         // Add the curie shorthand to the root object if it's not already present
         if (!_private(_private(this).root).hal.getLink(Rel.Curies, (link: Hal.Link) => link.name === name)) {
             // Remove the well-known rel parameter, so that it remains templated
@@ -168,11 +175,7 @@ export class Response implements hal.Response {
             delete params[Rel.Param];
 
             // Add the documentation link (with fallthrough params from this response)
-            _private(_private(this).root).hal.addLink(Rel.Curies, Template.link({
-                href: href,
-                id: name,
-                params
-            }));
+            _private(_private(this).root).hal.addLink(Rel.Curies, Template.link({ href, id: name, params }));
         }
     }
 }

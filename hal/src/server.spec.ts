@@ -56,7 +56,8 @@ class TestApi {
         res.link('extra');
         res.link('override', {
             rel: LinkRelation.Alternate,
-            array: true
+            array: true,
+            href: { query: { query: 'string' } }
         });
         res.link('custom', {
             href: 'http://www.contoso.com'
@@ -408,7 +409,7 @@ describe('HAL API Tests', () => {
             expect(single(result._links, `${TestApiName}:custom`).href).toBe('http://www.contoso.com');
             let alternates = array(result._links, 'alternate');
             expect(alternates.length).toBe(1);
-            expect(alternates[0].href).toBe('/api/test/override');
+            expect(alternates[0].href).toBe('/api/test/override?query=string');
 
             // Test shared-namespace links
             expect(single(result._links, `${TestApiName}:extended`).href).toBe('/extended/extended');

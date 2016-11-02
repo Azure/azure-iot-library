@@ -4,7 +4,7 @@ import * as express from 'express';
 import * as url from 'url';
 import * as mustache from 'mustache';
 
-import {LinkRelation, Rel, Verb, Template as Format} from './constants';
+import {LinkRelation, Rel, Verb, Template as Format, Href} from './constants';
 import {Response} from './response';
 import {provides, hal} from './decorators';
 import {Api} from './api';
@@ -111,12 +111,11 @@ export class Server {
 
         // If this method provides rels, map them for quick access
         for (let provides of handler.args.provides) {
-            let template = Template.apply(route.path, provides.options.params || {});
-            Server.linker.registerLink(server, provides.rel, template, Object.assign({
-                verb: route.verb,
-                href: route.path,
-                links
-            }, provides.options));
+            // Guarantee that internally-routed rels are stored as string hrefs
+            let verb = route.verb;
+            let href = Href.stringify(route.path);
+            let template = Template.apply(href, provides.options.params || {});
+            Server.linker.registerLink(server, provides.rel, template, Object.assign({ verb, href, links }, provides.options));
         }
 
         // Bind the handlers in promises; Express does not use the return values of its handlers, 
@@ -179,7 +178,7 @@ export class Server {
 
             // Resolve namespace documentation
             for (let provides of proto.provides) {
-                const href = provides.options.href || `/docs/${provides.namespace}/:${Rel.Param}`;
+                const href = Href.stringify(provides.options.href || '') || `/docs/${provides.namespace}/:${Rel.Param}`;
 
                 Server.linker.registerDocs(server, provides.namespace, href);
 
@@ -222,11 +221,11 @@ export class Server {
 
             // Ensure proper relative href resolution
             Server.linker.setDocsCallback(server, docs => {
-                docs.href = relative(app, docs.href!);
+                docs.href = relative(app, docs.href! as string);
                 return docs;
             });
             Server.linker.setLinkCallback(server, link => {
-                link.href = relative(app, link.href!);
+                link.href = relative(app, link.href! as string);
                 return link;
             });
         }

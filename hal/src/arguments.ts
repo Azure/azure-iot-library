@@ -2,7 +2,7 @@
 
 import * as express from 'express';
 
-import {Rel, Verb} from './constants';
+import {Rel, Verb, Href} from './constants';
 import {provides, middleware, filter, hal} from './decorators';
 
 // Provides interfaces for storing the arguments of the decorator callstacks
@@ -35,7 +35,7 @@ export namespace Arguments {
     export namespace Method {
         export interface Route {
             verb: Verb;
-            path: string;
+            path: Href;
         }
         export interface Provides {
             rel: Rel;

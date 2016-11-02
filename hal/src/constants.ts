@@ -1,5 +1,7 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
+import * as url from 'url';
+
 import {provides} from './decorators';
 
 // Most common HTTP verbs, provided as a convenience
@@ -112,6 +114,14 @@ export namespace Rel {
     // Convert the rel into a string form
     export function stringify(rel: Rel): string {
         return typeof rel === 'string' ? rel : LinkRelation[rel].replace(/([A-Z])/g, '-$1').toLowerCase().substring(1);
+    }
+}
+
+export type Href = string | url.Url;
+
+export namespace Href {
+    export function stringify(href: Href): string {
+        return typeof href === 'string' ? href : url.format(href);
     }
 }
 

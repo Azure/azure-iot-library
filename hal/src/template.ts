@@ -52,10 +52,16 @@ export class Template {
 
     // Convert an internal link object to a HAL link
     static link(resolved: hal.Overrides): Hal.Link {
-        let link: Hal.Link = { href: resolved.href! };
-        if (resolved.href && resolved.params) {
+        // If the href is a Url object, we need to translate it back into a string;
+        // we also have to decode the template, in case it was encoded during href parsing
+        let link: Hal.Link = {
+            href: typeof resolved.href === 'string' ?
+                resolved.href :
+                Template.decode(url.format(resolved.href || {}))
+        };
+        if (resolved.params) {
             // Create templates for all undefined params and fully resolve the href
-            link.href = Template.apply(resolved.href, resolved.params);
+            link.href = Template.apply(link.href, resolved.params);
         }
         if (Template.l4.test(link.href)) {
             // Since the default of templated is false, we only want it set at all if it is true

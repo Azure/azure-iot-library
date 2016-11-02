@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {Server} from './server';
-import {Verb, Rel, Template} from './constants';
+import {Verb, Rel, Template, Href} from './constants';
 import {Api} from './api';
 
 type ExpressHandlerDescriptor = TypedPropertyDescriptor<express.RequestHandler>;
@@ -29,7 +29,7 @@ export namespace provides {
             description?: string;
         };
         export interface Namespace {
-            href?: string;
+            href?: Href;
             auto?: boolean;
             template?: string;
             fallback?: (ns: string, rel: string) => Template;
@@ -57,21 +57,21 @@ export namespace hal {
     }
     export interface Overrides extends Metadata {
         rel?: Rel;
-        href?: string;
+        href?: Href;
         server?: Object;
         links?: Rel[];
     }
     export interface Response {
         link(rel: Rel, overrides?: Overrides): void;
         embed(rel: Rel, value: Object, overrides?: Overrides): Response;
-        docs(name: string, href: string): void;
+        docs(name: string, href: Href): void;
     }
     export const discovery: express.RequestHandler = Server.discovery;
 }
 
 export function route(target: Object): express.Application;
-export function route(verb: Verb, path: string): MethodDecorator;
-export function route(first: Verb | Object, second?: string): express.Application | MethodDecorator {
+export function route(verb: Verb, path: Href): MethodDecorator;
+export function route(first: Verb | Object, second?: Href): express.Application | MethodDecorator {
     if (typeof first === 'object') {
         // -- Utility method --
         return Server.route(first);
