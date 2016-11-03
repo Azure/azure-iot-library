@@ -4,7 +4,7 @@ import * as express from 'express';
 import * as url from 'url';
 import * as mustache from 'mustache';
 
-import {LinkRelation, Rel, Verb, Template as Format, Href} from './constants';
+import {LinkRelation, Rel, Verb, Template as Format, Href, Hal} from './constants';
 import {Response} from './response';
 import {provides, hal} from './decorators';
 import {Api} from './api';
@@ -234,8 +234,11 @@ export class Server {
     }
     
     // An Express handler which provides HAL links to all discoverable routes
-    static discovery(req: express.Request, res: express.Response, next: express.NextFunction) {
-        const hal = Response.create({}, path(req), [], req, res);
+    static discovery(req: express.Request, res?: express.Response, next?: express.NextFunction): Hal.Resource {
+        let body: Hal.Resource = {};
+        let stub: any = { type: () => stub, json: (data: any) => body = data };
+
+        const hal = Response.create({}, path(req), [], req, res || stub);
         for (let server of Server.linker.servers()) {
             const proto = Server.proto(server);
             for (let methodName in proto.methods) {
@@ -247,6 +250,8 @@ export class Server {
             }
         }
         hal.json({});
+        
+        return body;
     };
 }
 

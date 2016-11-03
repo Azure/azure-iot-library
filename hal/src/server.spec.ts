@@ -469,7 +469,7 @@ describe('HAL API Tests', () => {
     });
     
     it('Discoverable routes should be discoverable', done => {
-        call('get', 'http://localhost/api/').then((result: Hal.Resource) => {
+        let testDiscovery = (result: Hal.Resource) => {
         
             // Test _links
             expect(result).toBeDefined();
@@ -483,7 +483,11 @@ describe('HAL API Tests', () => {
             testStandardLink(result, TestApiName, 'default');
             testStandardLink(result, AltApiName, 'cross');
         
-        }).then(done).catch(done.fail);
+        };
+
+        testDiscovery(hal.discovery({ originalUrl: 'http://localhost/api/', params: {} } as any));
+
+        call('get', 'http://localhost/api/').then(testDiscovery).then(done).catch(done.fail);
     });
     
     it('Parameters should fall through to subsequent links', done => {

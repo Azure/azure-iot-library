@@ -3,7 +3,7 @@
 import * as express from 'express';
 
 import {Server} from './server';
-import {Verb, Rel, Template, Href} from './constants';
+import {Verb, Rel, Template, Href, Hal} from './constants';
 import {Api} from './api';
 
 type ExpressHandlerDescriptor = TypedPropertyDescriptor<express.RequestHandler>;
@@ -66,7 +66,7 @@ export namespace hal {
         embed(rel: Rel, value: Object, overrides?: Overrides): Response;
         docs(name: string, href: Href): void;
     }
-    export const discovery: express.RequestHandler = Server.discovery;
+    export const discovery: express.RequestHandler & ((req: express.Request) => Hal.Resource) = Server.discovery;
 }
 
 export function route(target: Object): express.Application;

@@ -101,6 +101,9 @@ Returns an object representing the method decorators (if `method` is specified) 
 #### `hal.discovery`
 An Express handler which provides links to all discoverable routes.
 
+#### `hal.discovery(request)`
+Calling the discovery handler with just the request will return the `Hal.Resource` representing the discovery body.
+
 ## Types `@azure-iot/hal/types`
 
 #### `Method`
