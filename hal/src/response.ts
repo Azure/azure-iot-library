@@ -101,12 +101,6 @@ export class Response implements hal.Response {
         return (links.length > 0 ? links : [{}]).map(link => {
             // Splice the automatic link resolution with the overrides
             let resolved = Object.assign({}, base, link, overrides);
-
-            // If we are overriding with a URL object, splice it into the resolved href
-            if (overrides.href && typeof overrides.href === 'object') {
-                // Internally-resolved links are guaranteed to be strings
-                resolved.href = Object.assign(url.parse(link.href! as string), overrides.href);
-            }
             
             // Unless they were overridden, params should be a union of the provided params
             if (!overrides.params) {
@@ -118,6 +112,14 @@ export class Response implements hal.Response {
 
             // Normalize the resolved rel; if it was overridden, bypass the server to prevent automatic namespacing
             resolved.rel = resolved.rel && Server.linker.normalize(overrides.rel ? {} : resolved.server || {}, resolved.rel);
+
+            // If we are overriding with a URL object, splice it into the resolved href
+            if (overrides.href && typeof overrides.href === 'object') {
+                // Internally-resolved links are guaranteed to be strings;
+                // we also need to resolve the params of the base href first,
+                // to prevent conflict between Express and URI syntax
+                resolved.href = Object.assign(url.parse(Template.apply(link.href! as string, resolved.params)), overrides.href);
+            }
             
             return resolved;
         });

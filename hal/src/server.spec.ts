@@ -56,14 +56,14 @@ class TestApi {
         res.link('extra');
         res.link('override', {
             rel: LinkRelation.Alternate,
-            array: true,
-            href: { query: { query: 'string' } }
+            array: true
         });
         res.link('custom', {
             href: 'http://www.contoso.com'
         });
         res.link('template', {
-            params: { id: 'name' }
+            params: { id: 'name' },
+            href: { query: { query: 'string' } }
         });
         res.link('query', {
             params: { value: 0 }
@@ -392,7 +392,7 @@ describe('HAL API Tests', () => {
             expect(templates.length).toBe(2);
             expect(templates[0].href).toBe('/api/test/template/{id}');
             expect(templates[0].templated).toBe(true);
-            expect(templates[1].href).toBe('/api/test/template/name');
+            expect(templates[1].href).toBe('/api/test/template/name?query=string');
             expect(templates[1].name).toBe('name');
 
             // Test query- and URI-templated links
@@ -412,7 +412,7 @@ describe('HAL API Tests', () => {
             expect(single(result._links, `${TestApiName}:custom`).href).toBe('http://www.contoso.com');
             let alternates = array(result._links, 'alternate');
             expect(alternates.length).toBe(1);
-            expect(alternates[0].href).toBe('/api/test/override?query=string');
+            expect(alternates[0].href).toBe('/api/test/override');
 
             // Test shared-namespace links
             expect(single(result._links, `${TestApiName}:extended`).href).toBe('/extended/extended');
