@@ -26,13 +26,13 @@ export namespace provides {
     export namespace Options {
         export interface Rel extends hal.Metadata {
             discoverable?: boolean;
-            description?: string;
+            description?: string | ((ns: string, rel: string, req: express.Request) => string);
         };
         export interface Namespace {
             href?: Href;
             auto?: boolean;
             template?: string;
-            fallback?: (ns: string, rel: string) => Template;
+            fallback?: (ns: string, rel: string, req: express.Request) => Template;
         };
     }
 }

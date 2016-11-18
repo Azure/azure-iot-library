@@ -66,16 +66,17 @@ export class Server {
 
             // For each possible route in the resolved rel, format the route and all available methods
             const routes: Format.Route[] = Server.linker.handle({}, args.namespace + ':' + rel, (server: Object, route: string, links: Server.Link[]) => ({
-                href: relative(app, route),
+                href: Template.apply(relative(app, links[0].href! as string), links[0].params || {}),
                 methods: links.map(link => ({
                     verb: link.verb,
-                    options: link
+                    options: typeof link.description !== 'function' ? link :
+                        Object.assign({}, link, { description: link.description(args.namespace, rel, req) })
                 }))
             }));
 
             // Generate a standard formatting object, calling the fallback if necessary
             const format: Format = Object.assign({ ns: args.namespace, rel, routes },
-                routes.length === 0 && args.options.fallback ? args.options.fallback(args.namespace, rel) : {});
+                routes.length === 0 && args.options.fallback ? args.options.fallback(args.namespace, rel, req) : {});
 
             // If no routes were found, assume this was not a valid rel
             if (format.routes && format.routes.length > 0) {

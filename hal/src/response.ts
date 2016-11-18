@@ -44,7 +44,7 @@ export class Response implements hal.Response {
             docs: Response.prototype.docs.bind(res)
         });
         
-        Response.prototype._initialize.bind(res)(resolved);
+        Response.prototype._initialize.bind(res)(resolved, !!data);
         
         return resource;
     }
@@ -58,12 +58,12 @@ export class Response implements hal.Response {
     }
     
     // Initialize a new response object (acts as a constructor)
-    private _initialize(resolved: hal.Overrides) {
+    private _initialize(resolved: hal.Overrides, template: boolean) {
         // Add all of the default links
         if (resolved.links) {
             for (let link of resolved.links) {
                 if (link === LinkRelation.Self) {
-                    _private(this).hal.addLink('self', Template.link(resolved));
+                    _private(this).hal.addLink('self', template ? Template.link(resolved) : resolved.href!);
                 } else {
                     this.link(link);
                 }

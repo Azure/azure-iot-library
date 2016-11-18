@@ -228,6 +228,7 @@ class DynamicApi extends ParentApi {
 
 let AutoDoc = {
     description: 'A description for automatic documentation.',
+    lazy: 'A lazy description for automatic documentation.',
     path: `/docs/list/{rel}`,
     fallback: {
         rel: 'fallback',
@@ -259,7 +260,7 @@ class ListApi {
     }
 
     @route(Method.GET, '/list')
-    @provides('list')
+    @provides('list', { description: () => AutoDoc.lazy })
     @hal()
     List(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         res.link('item', {
@@ -605,6 +606,11 @@ describe('HAL API Tests', () => {
 
             // Test basic automatic documentation
             expect(result.replace(/&#x2F;/g, '/')).toBe(`<h1>/api/list/item</h1><h2>GET</h2><p>${AutoDoc.description}</p>`);
+
+        }).then(() => call('get', `http://localhost/api/list/docs/list/list`)).then((result: any) => {
+
+            // Test lazy automatic documentation
+            expect(result.replace(/&#x2F;/g, '/')).toBe(`<h1>/api/list/list</h1><h2>GET</h2><p>${AutoDoc.lazy}</p>`);
 
         }).then(() => call('get', `http://localhost/api/list/docs/list/${AutoDoc.fallback.rel}`)).then((result: any) => {
 

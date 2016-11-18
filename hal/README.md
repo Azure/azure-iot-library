@@ -21,7 +21,7 @@ Associates a HAL namespace and documentation with this server class. It can be u
     * `href` [string | Url]: The documentation link representing this namespace; this contains the placeholder 'rel' for the rels provided by the routes of this server, as per the HAL spec. It can accept either URI-template or Express syntax, as per the `@route` decorator. Default is '/docs/&lt;namespace&gt;/:rel'.
     * `auto` [boolean]: Indicates whether to automatically generate documentation from the `description` attributes, described below; default is false if `href` is specified, true otherwise.
     * `template` [string]: A [Mustache](https://mustache.github.io/) template used to format the automatically-generated documentation. The format of the provided object is the `Template` type, specified below.
-    * `fallback` [(ns: string, rel: string) => Template]: A callback to handle automatically-generated documentation rels that are not predefined by the service. It is provided the namespace and rel, and should return the data to be passed to the formatting template. If no routes are provided, the documentation call will be treated as a 404.
+    * `fallback` [(ns: string, rel: string, req: express.Request) => Template]: A callback to handle automatically-generated documentation rels that are not predefined by the service. It is provided the namespace and rel (and the request of the documentation route), and should return the data to be passed to the formatting template. If no routes are provided, the documentation call will be treated as a 404.
 
 #### `@middleware(handler, [options])`
 Indicates Express-style middleware to use with this server; it can be used multiple times to add more than one middleware function per server.
@@ -41,7 +41,7 @@ Indicates a rel this handler provides; it can be used multiple times, and omitti
 * `rel` [string | LinkRelation]: The rel this route provides; this is either a string specifying a custom rel (which will automatically be prepended with this server's namespace, e.g. 'ns:rel' in the example below) or an instance of the LinkRelation enum, specifying one of the standard, non-namespaced rels.
 * `options` [provides.Options.Rel] *(optional)*:
     * `discoverable` [boolean]: Indicates whether this handler should be included in the discoverability API; default is false.
-    * `description` [string]: The description that will be used for this rel and this route in automatically-generated documentation.
+    * `description` [string | (ns: string, rel: string, req: express.Request) => string]: The description that will be used for this rel and this route in automatically-generated documentation. If a function is provided, it will be resolved as per the `fallback` function before being formatted.
     * `params` [any]: URI parameters to explicitly force for this rel. This allows, for example, a route with an optional parameter to have a separate rel explicitly for when that parameter is empty.
     * `array` [boolean]: The rel will be forced to be an array, even if it only contains one link.
     * `id` [string]: The name of the ID parameter. This will fill out the 'name' in any links to this rel from the corresponding entry in the params object.

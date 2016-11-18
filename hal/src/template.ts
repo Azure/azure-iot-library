@@ -38,7 +38,7 @@ export class Template {
     // Apply the given parameters to the templated path,
     // and return a partial template for any missing parameters
     static apply(href: string, params: any): string {
-        if (Template.l1.test(href)) {
+        if (href.search(Template.l1) >= 0) {
             // Handle URI template
             return href.replace(Template.l1, (match, variable) =>
                 typeof params[variable] !== 'undefined' ? params[variable] : match);
@@ -63,7 +63,7 @@ export class Template {
             // Create templates for all undefined params and fully resolve the href
             link.href = Template.apply(link.href, resolved.params);
         }
-        if (Template.l4.test(link.href)) {
+        if (link.href.search(Template.l4) >= 0) {
             // Since the default of templated is false, we only want it set at all if it is true
             link.templated = true;
         }
@@ -79,7 +79,7 @@ export class Template {
     // Convert a templated URI into the nearest-possible templated Express path 
     static express(href: string): string {
         // If this is not a templated URI, pass it through
-        if (!Template.l1.test(href)) {
+        if (href.search(Template.l1) < 0) {
             return href;
         }
 
