@@ -207,6 +207,18 @@ class AltApi {
     CrossClassRel(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
+
+    @route(Method.GET, '/discoverable')
+    @provides('discoverable', { discoverable: true })
+    DiscoverableTrue(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
+
+    @route(Method.POST, '/undiscoverable')
+    @provides('discoverable')
+    DiscoverableFalse(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
 }
 
 let ParentApiName = 'parent';
@@ -471,7 +483,7 @@ describe('HAL API Tests', () => {
     
     it('Discoverable routes should be discoverable', done => {
         let testDiscovery = (result: Hal.Resource) => {
-        
+
             // Test _links
             expect(result).toBeDefined();
             expect(result._links).toBeDefined();
@@ -483,7 +495,8 @@ describe('HAL API Tests', () => {
             // Test links
             testStandardLink(result, TestApiName, 'default');
             testStandardLink(result, AltApiName, 'cross');
-        
+            testStandardLink(result, AltApiName, 'discoverable');
+
         };
 
         testDiscovery(hal.discovery({ originalUrl: 'http://localhost/api/', params: {} } as any));

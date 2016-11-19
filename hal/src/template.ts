@@ -73,6 +73,10 @@ export class Template {
         if (resolved.title) {
             link.title = resolved.title;
         }
+        for (let symbol of Object.getOwnPropertySymbols(resolved)) {
+            // Copy all symbols, to allow propagation of hidden information
+            link[symbol] = resolved[symbol];
+        }
         return link;
     }
 

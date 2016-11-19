@@ -136,7 +136,7 @@ export class Response implements hal.Response {
     
     // Add a link to the HAL response for the given rel, with any provided overrides
     link(rel: Rel, overrides: hal.Overrides = {}) {
-         _private(this).resolve(rel, overrides).forEach(resolved => {
+         for (let resolved of _private(this).resolve(rel, overrides)) {
             if (resolved.rel && resolved.href) {
                 let str = Rel.stringify(resolved.rel);
                 _private(this).docs(resolved);
@@ -145,7 +145,7 @@ export class Response implements hal.Response {
             } else {
                 unresolvableRel(this, rel);
             }
-        });
+        }
     }
     
     // Add an embedded value to the HAL response for the given rel, with any provided overrides;
@@ -180,6 +180,20 @@ export class Response implements hal.Response {
             _private(_private(this).root).hal.addLink(Rel.Curies, Template.link({ href, id: name, params }));
         }
     }
+
+    // Perform a filter on the link or embed objects
+    static filter(response: hal.Response, filter: Response.Filter) {
+        if (filter.links) {
+            for (let rel of _private(response).hal.listLinkRels().filter(rel => rel !== Rel.Curies)) {
+                _private(response).hal.removeLinks(rel, link => !filter.links!(link));
+            }
+        }
+        if (filter.embeds) {
+            for (let rel of _private(response).hal.listEmbedRels()) {
+                _private(response).hal.removeEmbeds(rel, embed => !filter.embeds!(embed));
+            }
+        }
+    }
 }
 
 export namespace Response {
@@ -192,6 +206,11 @@ export namespace Response {
         docs(resolved: hal.Overrides): void;
     }
     export const Private = Symbol();
+
+    export interface Filter {
+        links?: (link: Hal.Link) => boolean;
+        embeds?: (embed: Hal.Resource) => boolean;
+    }
 }
 
 function _private(response: hal.Response): Response.Private {

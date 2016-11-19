@@ -225,8 +225,9 @@ export class Server {
                 docs.href = relative(app, docs.href! as string);
                 return docs;
             });
-            Server.linker.setLinkCallback(server, link => {
+            Server.linker.setLinkCallback(server, (link, /* readonly */ original) => {
                 link.href = relative(app, link.href! as string);
+                link[Server.Link.Discoverable] = original.some((provides: Server.Link) => !!provides.discoverable);
                 return link;
             });
         }
@@ -238,20 +239,29 @@ export class Server {
     static discovery(req: express.Request, res?: express.Response, next?: express.NextFunction): Hal.Resource {
         let body: Hal.Resource = {};
         let stub: any = { type: () => stub, json: (data: any) => body = data };
+        let hal = Response.create({}, path(req), [], req, res || stub);
 
-        const hal = Response.create({}, path(req), [], req, res || stub);
         for (let server of Server.linker.servers()) {
+            let rels: Set<Rel> = new Set();
+
             const proto = Server.proto(server);
             for (let methodName in proto.methods) {
                 for (let provides of proto.methods[methodName][Arguments.Stack].provides) {
                     if (provides.options.discoverable) {
-                        hal.link(provides.rel, { server });
+                        rels.add(provides.rel);
                     }
                 }
             }
+
+            // Only include a rel once per server (this may still result in multiple links)
+            for (let rel of rels.values()) {
+                hal.link(rel, { server });
+            }
         }
+
+        // Filter down to only discoverable rels
+        Response.filter(hal, { links: link => link[Server.Link.Discoverable] });
         hal.json({});
-        
         return body;
     };
 }
@@ -259,6 +269,10 @@ export class Server {
 export namespace Server {
     export interface Link extends hal.Overrides, provides.Options.Rel {
         verb: string;
+    }
+
+    export namespace Link {
+        export const Discoverable = Symbol();
     }
 
     export interface Handler {

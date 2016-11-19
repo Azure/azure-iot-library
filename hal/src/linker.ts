@@ -95,7 +95,7 @@ export class Linker {
                 // Merge params into a single object; in order to keep the same order preference
                 // mentioned above, we reverse the array, so that the preferred verbs are applied last
                 params: Object.assign({}, ...links.reverse().map(link => link.params || {}))
-            });
+            }, links);
         });
     }
 
@@ -128,7 +128,7 @@ export class Linker {
     }
 
     // Provide a post-processing callback for this server to handle its links
-    setLinkCallback(base: Object, cb: (link: hal.Overrides) => hal.Overrides) {
+    setLinkCallback(base: Object, cb: (link: hal.Overrides, /* readonly */ original: hal.Overrides[]) => hal.Overrides) {
         Data.initialize(base).linkCb = cb;
     }
 
@@ -148,7 +148,7 @@ export namespace Linker {
 interface Data {
     links: { [rel: string]: Data.Rel, [rel: number]: Data.Rel };
     docs: { [name: string]: Linker.Docs };
-    linkCb: (link: hal.Overrides) => hal.Overrides;
+    linkCb: (link: hal.Overrides, /* readonly */ original: hal.Overrides[]) => hal.Overrides;
     docsCb: (docs: Linker.Docs) => Linker.Docs;
     name?: string;
 }
