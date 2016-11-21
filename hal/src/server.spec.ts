@@ -40,9 +40,9 @@ function err(err: any, req: express.Request, res: express.Response, next: expres
 }
 
 // Create a class for testing decorator behavior
-let TestApiName = 'test';
-let TestApiDocs = 'http://www.contoso.com/docs/:rel';
-let TestApiTemplate = 'http://www.contoso.com/docs/{rel}';
+const TestApiName = 'test';
+const TestApiDocs = 'http://www.contoso.com/docs/:rel';
+const TestApiTemplate = 'http://www.contoso.com/docs/{rel}';
 @provides(TestApiName, { href: TestApiDocs })
 @middleware(cls)
 @middleware(err, { error: true })
@@ -195,8 +195,8 @@ class ExtendedApi {
     }
 }
 
-let AltApiName = 'alt';
-let AltApiDocs = 'http://www.adatum.com/docs/{rel}';
+const AltApiName = 'alt';
+const AltApiDocs = 'http://www.adatum.com/docs/{rel}';
 @provides(AltApiName, { href: AltApiDocs })
 @provides('secondary')
 class AltApi {
@@ -221,8 +221,8 @@ class AltApi {
     }
 }
 
-let ParentApiName = 'parent';
-let ParentApiDocs = `/docs/${ParentApiName}/{rel}`;
+const ParentApiName = 'parent';
+const ParentApiDocs = `/docs/${ParentApiName}/{rel}`;
 @provides(ParentApiName)
 class ParentApi {}
 
@@ -238,7 +238,7 @@ class DynamicApi extends ParentApi {
     }
 }
 
-let AutoDoc = {
+const AutoDoc = {
     description: 'A description for automatic documentation.',
     lazy: 'A lazy description for automatic documentation.',
     path: `/docs/list/{rel}`,
@@ -284,7 +284,7 @@ class ListApi {
 
 describe('HAL API Tests', () => {
 
-    let server = {
+    const server = {
         test: new TestApi(),
         extended: new ExtendedApi(),
         alt: new AltApi(),
@@ -299,7 +299,7 @@ describe('HAL API Tests', () => {
     
     function call(method: string, url: string) {
         return new Promise((resolve, reject) => {
-            let resfn = (body: any) => (resolve(body), response);
+            const resfn = (body: any) => (resolve(body), response);
             request = { url, method, next: {}, resolve };
             response = {
                 locals: {},
@@ -314,7 +314,7 @@ describe('HAL API Tests', () => {
     }
     
     function single<T>(map: { [rel: string]: T | T[] } = {}, rel: string): T {
-        let item = map[rel];
+        const item = map[rel];
         expect(item).toBeDefined();
         if (item instanceof Array) {
             throw new Error(`Expected ${rel} to not be an array.`);
@@ -324,7 +324,7 @@ describe('HAL API Tests', () => {
     }
     
     function array<T>(map: { [rel: string]: T | T[] } = {}, rel: string): T[] {
-        let item = map[rel];
+        const item = map[rel];
         expect(item).toBeDefined();
         if (item instanceof Array) {
             return item;
@@ -338,7 +338,7 @@ describe('HAL API Tests', () => {
     }
     
     function testCuries(hal: Hal.Resource, index: number, ns: string, href: string) {
-        let curies = array(hal._links, 'curies');
+        const curies = array(hal._links, 'curies');
         expect(curies[index]).toBeDefined();
         expect(curies[index].name).toBe(ns);
         expect(curies[index].href).toBe(href);
@@ -401,7 +401,7 @@ describe('HAL API Tests', () => {
             expect(single(result._links, 'index').href).toBe('/api/test/index');
             
             // Test templated links
-            let templates = array(result._links, `${TestApiName}:template`);
+            const templates = array(result._links, `${TestApiName}:template`);
             expect(templates.length).toBe(2);
             expect(templates[0].href).toBe('/api/test/template/{id}');
             expect(templates[0].templated).toBe(true);
@@ -409,12 +409,12 @@ describe('HAL API Tests', () => {
             expect(templates[1].name).toBe('name');
 
             // Test query- and URI-templated links
-            let query = single(result._links, `${TestApiName}:query`);
+            const query = single(result._links, `${TestApiName}:query`);
             expect(query.href).toBe('/api/test/query/{param}?q=0');
             expect(query.templated).toBe(true);
             
             // Test duplicate links
-            let duplicates = array(result._links, `${TestApiName}:duplicate`);
+            const duplicates = array(result._links, `${TestApiName}:duplicate`);
             expect(duplicates.length).toBe(2);
             expect(duplicates[0].href).toBe('/api/test/duplicate');
             expect(duplicates[1].href).toBe('/api/test/distinct');
@@ -423,7 +423,7 @@ describe('HAL API Tests', () => {
             testStandardLink(result, TestApiName, 'extra');
             expect(result._links![`${TestApiName}:override`]).toBeUndefined();
             expect(single(result._links, `${TestApiName}:custom`).href).toBe('http://www.contoso.com');
-            let alternates = array(result._links, 'alternate');
+            const alternates = array(result._links, 'alternate');
             expect(alternates.length).toBe(1);
             expect(alternates[0].href).toBe('/api/test/override');
 
@@ -433,27 +433,27 @@ describe('HAL API Tests', () => {
             // Test embedded objects
             expect(result._embedded).toBeDefined();
             
-            let extraEmbedded = single(result._embedded, `${TestApiName}:extra`);
+            const extraEmbedded = single(result._embedded, `${TestApiName}:extra`);
             expect(extraEmbedded).toBeDefined();
             expect(extraEmbedded['value']).toBe('test');
             expect(extraEmbedded._links).toBeDefined();
             expect(single(extraEmbedded._links, 'self').href).toBe('/api/test/extra');
             testStandardLink(extraEmbedded, TestApiName, 'default');
             
-            let customEmbedded = single(result._embedded, `${TestApiName}:custom`);
+            const customEmbedded = single(result._embedded, `${TestApiName}:custom`);
             expect(customEmbedded).toBeDefined();
             expect(customEmbedded['value']).toBe('test');
             expect(customEmbedded._links).toBeDefined();
             expect(customEmbedded._links!['self']).toBeUndefined();
             testStandardLink(customEmbedded, TestApiName, 'override');
 
-            let parentEmbedded = single(result._embedded, `${TestApiName}:parent`);
+            const parentEmbedded = single(result._embedded, `${TestApiName}:parent`);
             expect(parentEmbedded).toBeDefined();
             expect(parentEmbedded['value']).toBe('parent');
             expect(parentEmbedded._links).toBeUndefined();
             expect(parentEmbedded._embedded).toBeDefined();
 
-            let childEmbedded = single(parentEmbedded._embedded, `${TestApiName}:child`);
+            const childEmbedded = single(parentEmbedded._embedded, `${TestApiName}:child`);
             expect(childEmbedded).toBeDefined();
             expect(childEmbedded['value']).toBe('child');
             expect(childEmbedded._links).toBeDefined();
@@ -482,7 +482,7 @@ describe('HAL API Tests', () => {
     });
     
     it('Discoverable routes should be discoverable', done => {
-        let testDiscovery = (result: Hal.Resource) => {
+        const testDiscovery = (result: Hal.Resource) => {
 
             // Test _links
             expect(result).toBeDefined();

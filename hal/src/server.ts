@@ -111,11 +111,11 @@ export class Server {
         const links = Array.from(hal.links);
 
         // If this method provides rels, map them for quick access
-        for (let provides of handler.args.provides) {
+        for (const provides of handler.args.provides) {
             // Guarantee that internally-routed rels are stored as string hrefs
-            let verb = route.verb;
-            let href = Href.stringify(route.path);
-            let template = Template.apply(href, provides.options.params || {});
+            const verb = route.verb;
+            const href = Href.stringify(route.path);
+            const template = Template.apply(href, provides.options.params || {});
             Server.linker.registerLink(server, provides.rel, template, Object.assign({ verb, href, links }, provides.options));
         }
 
@@ -178,7 +178,7 @@ export class Server {
             }
 
             // Resolve namespace documentation
-            for (let provides of proto.provides) {
+            for (const provides of proto.provides) {
                 const href = Href.stringify(provides.options.href || '') || `/docs/${provides.namespace}/:${Rel.Param}`;
 
                 Server.linker.registerDocs(server, provides.namespace, href);
@@ -190,14 +190,14 @@ export class Server {
             }
 
             // Resolve server-wide middleware
-            for (let middleware of proto.middleware.filter(middleware => !middleware.options.error)) {
+            for (const middleware of proto.middleware.filter(middleware => !middleware.options.error)) {
                 app.use(middleware.handler);
             }
 
             // Sort the methods into normalized route handlers
             let routes: Server.Route[] = [];
-            for (let method of proto.methods) {
-                for (let route of method[Arguments.Stack].route) {
+            for (const method of proto.methods) {
+                for (const route of method[Arguments.Stack].route) {
                     routes.push({
                         verb: Verb.stringify(route.verb).toLowerCase(),
                         path: Template.express(route.path),
@@ -207,7 +207,7 @@ export class Server {
             }
             
             // Register individual routes
-            for (let route of routes) {
+            for (const route of routes) {
                 if (app[route.verb]) {
                     app[route.verb].call(app, route.path, ...Server.register(server, route.handler));
                 } else {
@@ -216,7 +216,7 @@ export class Server {
             }
             
             // Resolve server-wide error-handling middleware
-            for (let middleware of proto.middleware.filter(middleware => middleware.options.error)) {
+            for (const middleware of proto.middleware.filter(middleware => middleware.options.error)) {
                 app.use(middleware.handler);
             }
 
@@ -241,12 +241,12 @@ export class Server {
         let stub: any = { type: () => stub, json: (data: any) => body = data };
         let hal = Response.create({}, path(req), [], req, res || stub);
 
-        for (let server of Server.linker.servers()) {
+        for (const server of Server.linker.servers()) {
             let rels: Set<Rel> = new Set();
 
             const proto = Server.proto(server);
-            for (let methodName in proto.methods) {
-                for (let provides of proto.methods[methodName][Arguments.Stack].provides) {
+            for (const methodName in proto.methods) {
+                for (const provides of proto.methods[methodName][Arguments.Stack].provides) {
                     if (provides.options.discoverable) {
                         rels.add(provides.rel);
                     }
@@ -254,7 +254,7 @@ export class Server {
             }
 
             // Only include a rel once per server (this may still result in multiple links)
-            for (let rel of rels.values()) {
+            for (const rel of rels.values()) {
                 hal.link(rel, { server });
             }
         }

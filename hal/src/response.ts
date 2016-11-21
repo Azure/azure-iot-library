@@ -11,7 +11,7 @@ import {hal} from './decorators';
 
 // Conditionally ensure this link or embed is an array, even if it's only a single item
 function ensureArray<T>(set: { [rel: string]: T | T[] } = {}, rel: string, ensure?: boolean) {
-    let value = set[rel];
+    const value = set[rel];
     if (ensure && value && !(value instanceof Array)) {
         set[rel] = [value];
     }
@@ -61,7 +61,7 @@ export class Response implements hal.Response {
     private _initialize(resolved: hal.Overrides, template: boolean) {
         // Add all of the default links
         if (resolved.links) {
-            for (let link of resolved.links) {
+            for (const link of resolved.links) {
                 if (link === LinkRelation.Self) {
                     _private(this).hal.addLink('self', template ? Template.link(resolved) : resolved.href!);
                 } else {
@@ -94,7 +94,7 @@ export class Response implements hal.Response {
             server: overrides.server || _private(this).server
         };
         
-        let links = Server.linker.getLinks(base.server!, base.rel!);
+        const links = Server.linker.getLinks(base.server!, base.rel!);
 
         // If the links failed to resolve, provide a dummy link object in order to ensure
         // that overrides can be proccessed
@@ -128,7 +128,7 @@ export class Response implements hal.Response {
     // Add the appropriate documentation links for a fully-resolved link;
     // this should only be called when the link contains a defined rel
     private _docs(resolved: hal.Overrides) {
-        let docs = Server.linker.getDocs(resolved.server || {}, resolved.rel!);
+        const docs = Server.linker.getDocs(resolved.server || {}, resolved.rel!);
         if (docs.name) {
             this.docs(docs.name, docs.href);
         }
@@ -136,9 +136,9 @@ export class Response implements hal.Response {
     
     // Add a link to the HAL response for the given rel, with any provided overrides
     link(rel: Rel, overrides: hal.Overrides = {}) {
-         for (let resolved of _private(this).resolve(rel, overrides)) {
+         for (const resolved of _private(this).resolve(rel, overrides)) {
             if (resolved.rel && resolved.href) {
-                let str = Rel.stringify(resolved.rel);
+                const str = Rel.stringify(resolved.rel);
                 _private(this).docs(resolved);
                 _private(this).hal.addLink(str, Template.link(resolved));
                 ensureArray(_private(this).hal._links, str, resolved.array);
@@ -151,9 +151,9 @@ export class Response implements hal.Response {
     // Add an embedded value to the HAL response for the given rel, with any provided overrides;
     // returns a HAL response object representing the embedded object, for further linking/embedding
     embed(rel: Rel, value: Object, overrides: hal.Overrides = {}): hal.Response {
-        let resolved = _private(this).resolve(rel, overrides)[0];
+        const resolved = _private(this).resolve(rel, overrides)[0];
         if (resolved.rel) {
-            let str = Rel.stringify(resolved.rel);
+            const str = Rel.stringify(resolved.rel);
             let resource = Response.resource(resolved, _private(this).root, value);
             _private(this).docs(resolved);
             _private(this).hal.addEmbed(str, _private(resource).hal);
@@ -184,12 +184,12 @@ export class Response implements hal.Response {
     // Perform a filter on the link or embed objects
     static filter(response: hal.Response, filter: Response.Filter) {
         if (filter.links) {
-            for (let rel of _private(response).hal.listLinkRels().filter(rel => rel !== Rel.Curies)) {
+            for (const rel of _private(response).hal.listLinkRels().filter(rel => rel !== Rel.Curies)) {
                 _private(response).hal.removeLinks(rel, link => !filter.links!(link));
             }
         }
         if (filter.embeds) {
-            for (let rel of _private(response).hal.listEmbedRels()) {
+            for (const rel of _private(response).hal.listEmbedRels()) {
                 _private(response).hal.removeEmbeds(rel, embed => !filter.embeds!(embed));
             }
         }

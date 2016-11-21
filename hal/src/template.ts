@@ -19,8 +19,8 @@ export class Template {
     private static params(href: string) {
         let params: { [param: string]: string } = {};
         const parsed = pathToRegexp.parse(href);
-        for (let token of parsed) {
-            let param = token as pathToRegexp.Key;
+        for (const token of parsed) {
+            const param = token as pathToRegexp.Key;
             if (param.repeat) {
                 params[param.name] = `{${param.delimiter}${param.name}*}`;
             } else {
@@ -73,7 +73,7 @@ export class Template {
         if (resolved.title) {
             link.title = resolved.title;
         }
-        for (let symbol of Object.getOwnPropertySymbols(resolved)) {
+        for (const symbol of Object.getOwnPropertySymbols(resolved)) {
             // Copy all symbols, to allow propagation of hidden information
             link[symbol] = resolved[symbol];
         }
@@ -87,7 +87,7 @@ export class Template {
             return href;
         }
 
-        let route = href.replace(Template.l1, (match, variable) => `:${variable}`);
+        const route = href.replace(Template.l1, (match, variable) => `:${variable}`);
 
         // Reduce the full route to its path portion; URI templates support templated query parameters,
         // but Express does not, and since URI templates do not support optional parameters, this will
