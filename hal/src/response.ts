@@ -33,9 +33,7 @@ export class Response implements hal.Response {
             server: resolved.server,
             params: resolved.params,
             hal: halson(data || {}),
-            root: root || res,
-            resolve: Response.prototype._resolve.bind(res),
-            docs: Response.prototype._docs.bind(res)
+            root: root || res
         };
         
         let resource = Object.assign(res, {
@@ -44,7 +42,7 @@ export class Response implements hal.Response {
             docs: Response.prototype.docs.bind(res)
         });
         
-        Response.prototype._initialize.bind(res)(resolved, !!data);
+        Response.initialize(resource, resolved, !!data);
         
         return resource;
     }
@@ -58,14 +56,14 @@ export class Response implements hal.Response {
     }
     
     // Initialize a new response object (acts as a constructor)
-    private _initialize(resolved: hal.Overrides, template: boolean) {
+    private static initialize(response: hal.Response, resolved: hal.Overrides, template: boolean) {
         // Add all of the default links
         if (resolved.links) {
             for (const link of resolved.links) {
                 if (link === LinkRelation.Self) {
-                    _private(this).hal.addLink('self', template ? Template.link(resolved) : resolved.href!);
+                    _private(response).hal.addLink('self', template ? Template.link(resolved) : resolved.href!);
                 } else {
-                    this.link(link);
+                    response.link(link);
                 }
             }
         }
@@ -85,14 +83,9 @@ export class Response implements hal.Response {
     }
 
     // Resolve the given rel into fully-defined link objects
-    private _resolve(rel: Rel, overrides: hal.Overrides): hal.Overrides[] {
+    static resolve(server: Object, rel: Rel, params: any, overrides: hal.Overrides): hal.Overrides[] {
         // Initialize the resolved link from the request
-        let base: hal.Overrides = {
-            rel: rel,
-            params: _private(this).params,
-            links: [],
-            server: overrides.server || _private(this).server
-        };
+        let base: hal.Overrides = { rel, params, links: [], server: overrides.server || server };
         
         const links = Server.linker.getLinks(base.server!, base.rel!);
 
@@ -127,19 +120,19 @@ export class Response implements hal.Response {
 
     // Add the appropriate documentation links for a fully-resolved link;
     // this should only be called when the link contains a defined rel
-    private _docs(resolved: hal.Overrides) {
+    private static docs(response: hal.Response, resolved: hal.Overrides) {
         const docs = Server.linker.getDocs(resolved.server || {}, resolved.rel!);
         if (docs.name) {
-            this.docs(docs.name, docs.href);
+            response.docs(docs.name, docs.href);
         }
     }
     
     // Add a link to the HAL response for the given rel, with any provided overrides
     link(rel: Rel, overrides: hal.Overrides = {}) {
-         for (const resolved of _private(this).resolve(rel, overrides)) {
+         for (const resolved of Response.resolve(_private(this).server, rel, _private(this).params, overrides)) {
             if (resolved.rel && resolved.href) {
                 const str = Rel.stringify(resolved.rel);
-                _private(this).docs(resolved);
+                Response.docs(this, resolved);
                 _private(this).hal.addLink(str, Template.link(resolved));
                 ensureArray(_private(this).hal._links, str, resolved.array);
             } else {
@@ -151,11 +144,11 @@ export class Response implements hal.Response {
     // Add an embedded value to the HAL response for the given rel, with any provided overrides;
     // returns a HAL response object representing the embedded object, for further linking/embedding
     embed(rel: Rel, value: Object, overrides: hal.Overrides = {}): hal.Response {
-        const resolved = _private(this).resolve(rel, overrides)[0];
+        const resolved = Response.resolve(_private(this).server, rel, _private(this).params, overrides)[0];
         if (resolved.rel) {
             const str = Rel.stringify(resolved.rel);
             let resource = Response.resource(resolved, _private(this).root, value);
-            _private(this).docs(resolved);
+            Response.docs(this, resolved);
             _private(this).hal.addEmbed(str, _private(resource).hal);
             ensureArray(_private(this).hal._embedded, str, resolved.array);
             return resource;

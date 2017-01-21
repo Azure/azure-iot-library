@@ -134,11 +134,41 @@ The object provided to the Mustache template for automatically-generated documen
 }
 ```
 
+## Utilities `@azure-iot/hal/util`
+
+### Server
+Server-specific utility methods can be accessed by calling the utility import as a function on the server object, eg. `util(server).method(...)`.
+
+#### `links(rel, [params])`
+Returns all of the links for the provided rel as an array of `Hal.Link` values.
+* `rel` [string | LinkRelation]: The rel for which to retrieve the links.
+* `overrides` [hal.Overrides] *(optional)*: Allows you to override the default behavior of the rel, as described above.
+
+#### `href(rel, [params])`
+A shorthand to return a single `string` href for the rel; if there are multiple routes present for the rel, it will simply select the first one, preferring discoverable routes.
+* `rel` [string | LinkRelation]: The rel for which to retrieve the href.
+* `params` [any] *(optional)*: A parameter object used to populate the href, if it is a templated route.
+
+### Generic
+Generic utility methods can be accessed directly from the utility import, eg. `util.method()`.
+
+#### `template(href, params)`
+Resolves a templated href with the provided parameters, and returns the `string` result.
+* `href` [string]: The templated href to resolve; accepts the same types of template as the `@route` decorator.
+* `params` [any]: The parameter object used to populate the href.
+
+#### `hrefs(body, rel, [params])`
+Returns all of the hrefs for the provided rel as an array of `string` values.
+* `body` [Hal.Resource]: The HAL object from which to retrieve linked hrefs.
+* `rel` [string | LinkRelation]: The rel for which to retrieve the hrefs.
+* `params` [any] *(optional)*: A parameter object used to populate the hrefs, if they are templated routes.
+
 ## Example
 
 ```ts
 import {route, middleware, hal, provides} from '@azure-iot/hal/api';
 import {Method, LinkRelation, Hal} from '@azure-iot/hal/types';
+import util from '@azure-iot/hal/util';
 
 @provides('ns', { href: '/docs/ns/:rel', auto: true })
 @middleware(expressMiddlewareFunction)
@@ -156,7 +186,9 @@ class Server {
     }
 }
 
+let server = new Server();
 let app = express();
-app.use('/api', route(new Server()));
+app.use('/api', route(server));
 app.get('/', hal.discovery);
+let href = util(server).href('rel')
 ```
