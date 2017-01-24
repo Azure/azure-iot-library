@@ -6,14 +6,14 @@ import {Server} from './server';
 import {Response} from './response';
 import {Template} from './template';
 
-export function Utility(server: Object): Utility.Server {
+export function Util(server: Object): Util.Server {
     return {
-        links: ServerUtility.links.bind(server),
-        href: ServerUtility.href.bind(server)
+        links: ServerUtil.links.bind(server),
+        href: ServerUtil.href.bind(server)
     };
 }
 
-class ServerUtility {
+class ServerUtil {
     static links(this: Object, rel: Rel, overrides?: hal.Overrides): Hal.Link[] {
         return Response.resolve(this, rel, {}, overrides || {}).map(resolved => Template.link(resolved));
     }
@@ -24,21 +24,25 @@ class ServerUtility {
     }
 }
 
-export namespace Utility {
+export namespace Util {
     export interface Server {
         links(rel: Rel, params?: any): Hal.Link[];
         href(rel: Rel, params?: any): string;
     }
 
-    export function template(href: string, params: any): string {
-        return Template.apply(href, params);
+    export function resolve(template: string, params: any): string {
+        return Template.apply(template, params);
     }
 
-    export function hrefs(body: Hal.Resource, rel: Rel, params?: any): string[] | undefined {
+    export function links(body: Hal.Resource, rel: Rel): Hal.Link[] | undefined {
         const links = body._links && body._links[Rel.stringify(rel)];
-        return links && (Array.isArray(links) ? links : [links])
-            .map(params ? link => Template.apply(link.href, params) : link => link.href);
+        return links && (Array.isArray(links) ? links : [links]);
+    }
+
+    export function href(body: Hal.Resource, rel: Rel, params?: any): string | undefined {
+        const links = Util.links(body, rel);
+        return links && links[0] && (params ? Template.apply(links[0].href, params) : links[0].href);
     }
 }
 
-export default Utility;
+export default Util;

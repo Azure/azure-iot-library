@@ -468,8 +468,8 @@ describe('HAL API Tests', () => {
             expect(result['complex'].value).toBe('value');
 
             // Test general utility APIs
-            expect(util.hrefs(result, `${TestApiName}:template`, { id: 'value' })).toEqual([ '/api/test/template/value', '/api/test/template/name?query=string' ]);
-            expect(util.template(templates[0].href, { id: 'value' })).toEqual('/api/test/template/value');
+            expect(util.href(result, `${TestApiName}:template`, { id: 'value' })).toBe('/api/test/template/value');
+            expect(util.resolve(templates[0].href, { id: 'value' })).toBe('/api/test/template/value');
 
         }).then(done).catch(done.fail);
     });
