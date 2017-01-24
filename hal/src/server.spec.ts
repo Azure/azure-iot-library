@@ -4,6 +4,7 @@ import * as express from 'express';
 
 import {route, middleware, hal, provides, filter, api} from '../api';
 import {Method, LinkRelation, Hal, Template} from '../types';
+import util from '../util';
 
 // Middleware functions
 function first(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -466,6 +467,10 @@ describe('HAL API Tests', () => {
             expect(result['complex']).toBeDefined();
             expect(result['complex'].value).toBe('value');
 
+            // Test general utility APIs
+            expect(util.href(result, `${TestApiName}:template`, { id: 'value' })).toBe('/api/test/template/value');
+            expect(util.resolve(templates[0].href, { id: 'value' })).toBe('/api/test/template/value');
+
         }).then(done).catch(done.fail);
     });
     
@@ -657,5 +662,12 @@ describe('HAL API Tests', () => {
             expect(response.locals.order[3]).toBeUndefined();
 
         }).then(done).catch(done.fail);
+    });
+
+    it('Server utility methods return expected results', done => {
+        expect(util(server.test).links('default')).toEqual([{ href : '/api/test/default' }]);
+        expect(util(server.test).href('template', { id: 'value' })).toEqual('/api/test/template/value');
+        expect(util(server.alt).href('discoverable')).toEqual('/api/alt/discoverable');
+        done();
     });
 });
