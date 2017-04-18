@@ -98,7 +98,7 @@ export class Configuration implements IConfiguration {
         let remoteFileName: string = await envConfig.getString(externalConfigKey);
         if (remoteFileName) {
             params.logger('External configuration file found.');
-            let infraKVConfigOpts = this.get<KeyVaultConfigurationOptions>(infraKeyVaultConfigKey);
+            let infraKVConfigOpts = envConfig.get<KeyVaultConfigurationOptions>(infraKeyVaultConfigKey);
             if (infraKVConfigOpts) {
                 params.logger('Initializing Infrastructure KeyVault connection');
                 let infraKeyVaultConfiguration = KeyVaultConfiguration.initialize(infraKVConfigOpts);
@@ -110,7 +110,7 @@ export class Configuration implements IConfiguration {
             }
         }
         // Add initial providers
-        await fileConfig.initialize(params.configFilename, params.storageAccountConnectionString, params.logger);
+         await fileConfig.initialize(params.configFilename, params.storageAccountConnectionString, params.logger);
         // Check all providers, including defaultConfig, for mongo settings,
         // but then remove it from providers to preserve provider ordering
         this.providers = [fileConfig, envConfig, defaultConfig];

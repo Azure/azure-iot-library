@@ -13,7 +13,7 @@ export interface KeyVaultConfigurationOptions {
     /** The hex encoded thumbprint of the certificate. */
     certThumbprint: string;
 
-    [storageConnectionStringId: string]: any;
+    storageConnectionStringId?: string;
 }
 
 

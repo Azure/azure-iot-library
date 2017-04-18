@@ -3,7 +3,7 @@
 import { readFile, access, F_OK } from 'fs';
 import { IConfiguration } from './IConfiguration';
 import { getVal } from './getVal';
-import { BlobService } from 'azure-storage';
+ import * as azureStorage from 'azure-storage';
 
 const containerName: string = 'environments';
 const fileConsumedMsg: string = 'User config file found';
@@ -28,7 +28,7 @@ export class FileConfiguration implements IConfiguration {
         let fileConfigPromise;
         if (configFilename.startsWith('http') && storageConnectionString) {
             fileConfigPromise = new Promise<string>((resolve, reject) => {
-                let blobService = new BlobService(storageConnectionString);
+               let blobService = new azureStorage.BlobService(storageConnectionString);
                 blobService.getBlobToText(containerName, configFilename, (error, text) => {
                     if (error)
                         reject();
