@@ -1,8 +1,8 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {MongoClient, Db, Collection} from 'mongodb';
-import {IConfiguration} from './IConfiguration';
-import {getVal} from './getVal';
+import { MongoClient, Db, Collection } from 'mongodb';
+import { IConfiguration } from './IConfiguration';
+import { getVal } from './getVal';
 import * as url from 'url';
 
 const timeoutSeconds: number = 8;
@@ -87,14 +87,14 @@ export class MongoConfiguration implements IConfiguration {
             let db: Db;
             try {
                 // Establish a connection
-                db = await new Promise<Db>( (resolve, reject) => {
+                db = await new Promise<Db>((resolve, reject) => {
                     MongoClient.connect(mongoUriStr, (err, database) => {
                         err ? reject(err) : resolve(database);
                     });
                 });
                 // Set this.mongoConfig
                 const collection: Collection = db.collection(this.params.collectionName);
-                this.mongoConfig = await new Promise( (resolve, reject) => {
+                this.mongoConfig = await new Promise((resolve, reject) => {
                     collection.findOne({}, (err, doc) => {
                         doc = doc || {};
                         err ? reject(err) : resolve(doc);
@@ -114,7 +114,7 @@ export class MongoConfiguration implements IConfiguration {
                     db.close();
                     throw err;
                 }
-                await new Promise( (resolve, reject) => {
+                await new Promise((resolve, reject) => {
                     setTimeout(resolve, timeoutSeconds * 1000);
                 });
             }
@@ -143,8 +143,12 @@ export class MongoConfiguration implements IConfiguration {
     public getString(key: string | string[]): string {
         let val: any = getVal(key, this.mongoConfig);
         if (typeof val !== 'string' && val !== null) {
-            throw new Error(
+            try {
+                return JSON.stringify(val);
+            } catch (err) {
+                throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
+            }
         }
         return val;
     }
@@ -172,11 +176,11 @@ export class MongoConfiguration implements IConfiguration {
         // Set update objects
         let query = {};
         let update = {};
-        query[key] = {$exists: true};
+        query[key] = { $exists: true };
         update[key] = value;
 
         // Establish a connection
-        const db: Db = await new Promise<Db>( (resolve, reject) => {
+        const db: Db = await new Promise<Db>((resolve, reject) => {
             const mongoUri: string = `${this.params.mongoUri}/${this.params.dbName}`;
             MongoClient.connect(mongoUri, (err, database) => {
                 err ? reject(err) : resolve(database);
@@ -185,7 +189,7 @@ export class MongoConfiguration implements IConfiguration {
         this.params.logger(connectionSuccessMsg);
         // Update key-value pair
         const collection: Collection = db.collection(this.params.collectionName);
-        await collection.updateOne({}, {$set: update}, {upsert: true});
+        await collection.updateOne({}, { $set: update }, { upsert: true });
         this.mongoConfig[key] = value;
         db.close();
     }

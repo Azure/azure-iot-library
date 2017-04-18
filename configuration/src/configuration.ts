@@ -1,16 +1,18 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {IConfiguration} from './IConfiguration';
-import {FileConfiguration} from './fileConfiguration';
-import {EnvConfiguration} from './envConfiguration';
-import {MongoConfiguration} from './mongoConfiguration';
-import {DefaultConfiguration} from './defaultConfiguration';
-import {KeyVaultConfiguration, KeyVaultConfigurationOptions} from './keyVaultConfiguration';
+import { IConfiguration } from './IConfiguration';
+import { FileConfiguration } from './fileConfiguration';
+import { EnvConfiguration } from './envConfiguration';
+import { MongoConfiguration } from './mongoConfiguration';
+import { DefaultConfiguration } from './defaultConfiguration';
+import { KeyVaultConfiguration, KeyVaultConfigurationOptions } from './keyVaultConfiguration';
 
+const externalConfigKey: string = 'EXTERNAL_CONFIG';
 const mongoUriKey: string = 'MONGO_URI';
 const mongoDbNameKey: string = 'MONGO_CONFIG_DB';
 const mongoCollectionNameKey: string = 'MONGO_CONFIG_COLLECTION';
-const keyVaultConfigKey = 'KEYVAULT';
+const keyVaultConfigKey: string = 'KEYVAULT';
+const infraKeyVaultConfigKey: string = 'INFRASTRUCTURE_KEYVAULT';
 const defaultDbName: string = 'config';
 const defaultCollectionName: string = 'config';
 const requiredKeysErrMsg: string = 'Not all required keys were found';
@@ -21,7 +23,8 @@ const defaultConfigOptions: ConfigOptions = {
     requiredKeys: [],
     configFilename: './user-config.json',
     secondsToRetry: 5 * 60,
-    logger: console.log
+    logger: console.log,
+    storageAccountConnectionString: ''
 };
 
 /*
@@ -45,6 +48,7 @@ export interface ConfigOptions {
     configFilename?: string;
     secondsToRetry?: number;
     logger?: Function;
+    storageAccountConnectionString?: string;
 }
 
 export interface Secret {
@@ -88,15 +92,32 @@ export class Configuration implements IConfiguration {
         let mongoConfig = new MongoConfiguration();
         let defaultConfig = new DefaultConfiguration(params.defaultValues);
 
+
+        // Check for config file path in env
+
+        let remoteFileName: string = await envConfig.getString(externalConfigKey);
+        if (remoteFileName) {
+            params.logger('External configuration file found.');
+            let infraKVConfigOpts = this.get<KeyVaultConfigurationOptions>(infraKeyVaultConfigKey);
+            if (infraKVConfigOpts) {
+                params.logger('Initializing Infrastructure KeyVault connection');
+                let infraKeyVaultConfiguration = KeyVaultConfiguration.initialize(infraKVConfigOpts);
+                let storageAccountConnectionString: string = (await infraKeyVaultConfiguration.getSecret(infraKVConfigOpts.storageConnectionStringId)).value;
+                params.configFilename = remoteFileName;
+                params.storageAccountConnectionString = storageAccountConnectionString;
+            } else {
+                params.logger('Infrastructure keyVault connection not initialized.');
+            }
+        }
         // Add initial providers
-        await fileConfig.initialize(params.configFilename, params.logger);
+        await fileConfig.initialize(params.configFilename, params.storageAccountConnectionString, params.logger);
         // Check all providers, including defaultConfig, for mongo settings,
         // but then remove it from providers to preserve provider ordering
         this.providers = [fileConfig, envConfig, defaultConfig];
         const mongoUri: string = this.getString(mongoUriKey);
         const dbName: string = this.getString(mongoDbNameKey) || defaultDbName;
         const collectionName: string =
-                this.getString(mongoCollectionNameKey) || defaultCollectionName;
+            this.getString(mongoCollectionNameKey) || defaultCollectionName;
         this.providers.pop();
 
         // Optionally add mongo provider
@@ -224,7 +245,7 @@ export class Configuration implements IConfiguration {
             return Promise.resolve(null);
         }
 
-        if (typeof(secret.value) !== 'undefined') {
+        if (typeof (secret.value) !== 'undefined') {
             return Promise.resolve(secret);
         }
 

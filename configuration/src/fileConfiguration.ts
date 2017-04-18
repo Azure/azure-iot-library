@@ -1,9 +1,11 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {readFile, access, F_OK} from 'fs';
-import {IConfiguration} from './IConfiguration';
-import {getVal} from './getVal';
+import { readFile, access, F_OK } from 'fs';
+import { IConfiguration } from './IConfiguration';
+import { getVal } from './getVal';
+import { BlobService } from 'azure-storage';
 
+const containerName: string = 'environments';
 const fileConsumedMsg: string = 'User config file found';
 const fileReadingErrMsg: string =
     'User config file found but unable to be read';
@@ -20,35 +22,49 @@ export class FileConfiguration implements IConfiguration {
      * @param {string} configFilename - Name of the JSON file containing
      * configuration preferences.
      */
-    public async initialize(configFilename: string, logger: Function = console.log): Promise<void> {
+    public async initialize(configFilename: string, storageConnectionString: string = '', logger: Function = console.log): Promise<void> {
         logger = logger || console.log;
         // Check for file existence
-        try {
-            await this.checkFileExistence(configFilename);
-        } catch (err) {
-            logger(fileNotFoundMsg);
-            return;
-        }
-
-        // Attempt to read file
-        let fileConfigPromise = new Promise<string>( (resolve, reject) => {
-            readFile(configFilename, 'utf8', (err, result) => {
-                if (err) {
-                    reject(err);
-                }
-                logger(fileConsumedMsg);
-                resolve(result);
+        let fileConfigPromise;
+        if (configFilename.startsWith('http') && storageConnectionString) {
+            fileConfigPromise = new Promise<string>((resolve, reject) => {
+                let blobService = new BlobService(storageConnectionString);
+                blobService.getBlobToText(containerName, configFilename, (error, text) => {
+                    if (error)
+                        reject();
+                    resolve(text);
+                });
+            }).catch((errMsg) => {
+                throw new Error(fileReadingErrMsg);
             });
-        }).catch( (errMsg) => {
-            throw new Error(fileReadingErrMsg);
-        });
+        }
+        else {
+            try {
+                await this.checkFileExistence(configFilename);
+            } catch (err) {
+                logger(fileNotFoundMsg);
+                return;
+            }
 
+            // Attempt to read file
+            fileConfigPromise = new Promise<string>((resolve, reject) => {
+                readFile(configFilename, 'utf8', (err, result) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    logger(fileConsumedMsg);
+                    resolve(result);
+                });
+            }).catch((errMsg) => {
+                throw new Error(fileReadingErrMsg);
+            });
+        }
         let fileConfig: string = await fileConfigPromise;
         this.fileConfig = JSON.parse(fileConfig);
     }
 
     private async checkFileExistence(configFilename: string): Promise<void> {
-        let fileExistence = new Promise<void>( (resolve, reject) => {
+        let fileExistence = new Promise<void>((resolve, reject) => {
             access(configFilename, F_OK, (err) => {
                 err ? reject(err) : resolve();
             });
@@ -70,8 +86,13 @@ export class FileConfiguration implements IConfiguration {
     public getString(key: string | string[]): string {
         let val: any = getVal(key, this.fileConfig);
         if (typeof val !== 'string' && val !== null) {
-            throw new Error(
+            // try to stringify first
+            try {
+                return JSON.stringify(val);
+            } catch (err) {
+                throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
+            }
         }
         return val;
     }

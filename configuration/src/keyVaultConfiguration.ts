@@ -12,6 +12,8 @@ export interface KeyVaultConfigurationOptions {
 
     /** The hex encoded thumbprint of the certificate. */
     certThumbprint: string;
+
+    [storageConnectionStringId: string]: any;
 }
 
 
@@ -50,7 +52,7 @@ export class KeyVaultConfiguration {
                         const authorizationValue = tokenResponse.tokenType + ' ' + tokenResponse.accessToken;
                         return callback(null, authorizationValue);
                     });
-                });
+            });
         });
 
         const client = new KeyVault.KeyVaultClient(credentials);

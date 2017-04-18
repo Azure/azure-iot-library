@@ -1,7 +1,7 @@
 /* Copyright (c) Microsoft Corporation. All Rights Reserved. */
 
-import {IConfiguration} from './IConfiguration';
-import {getVal} from './getVal';
+import { IConfiguration } from './IConfiguration';
+import { getVal } from './getVal';
 
 export class DefaultConfiguration implements IConfiguration {
     private defaultConfig: { [key: string]: any };
@@ -27,8 +27,12 @@ export class DefaultConfiguration implements IConfiguration {
     public getString(key: string | string[]): string {
         let val: any = getVal(key, this.defaultConfig);
         if (typeof val !== 'string' && val !== null) {
-            throw new Error(
+            try {
+                return JSON.stringify(val);
+            } catch (err) {
+                throw new Error(
                     `Configuration service found value for ${key} that was not a string.`);
+            }
         }
         return val;
     }
