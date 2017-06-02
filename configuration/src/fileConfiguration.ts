@@ -26,7 +26,7 @@ export class FileConfiguration implements IConfiguration {
         logger = logger || console.log;
         // Check for file existence
         let fileConfigPromise;
-        if (configFilename.startsWith('http') && storageConnectionString) {
+        if (storageConnectionString) {
             fileConfigPromise = new Promise<string>((resolve, reject) => {
                let blobService = new azureStorage.BlobService(storageConnectionString);
                 blobService.getBlobToText(containerName, configFilename, (error, text) => {
