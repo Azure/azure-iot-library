@@ -41,10 +41,10 @@ describe('Defaultironment configuration provider', () => {
         expect(defaultConfig.get(keysNotInDefault[1])).toEqual(null);
     });
 
-    it('throws an error when using get<T> for a string', () => {
+    it('does not throw an error when using getString() on a non-string value', () => {
         expect( () => defaultConfig.get('DEFAULT_KEY_1') ).not.toThrow();
         expect( () => defaultConfig.get('DEFAULT_KEY_2') ).not.toThrow();
         expect( () => defaultConfig.get('DEFAULT_FRUIT_OBJECT') ).not.toThrow();
-        expect( () => defaultConfig.getString('DEFAULT_FRUIT_OBJECT') ).toThrow();
+        expect( () => defaultConfig.getString('DEFAULT_FRUIT_OBJECT') ).not.toThrow();
     });
 });

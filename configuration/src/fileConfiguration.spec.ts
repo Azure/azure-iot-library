@@ -12,7 +12,7 @@
  *      - throw error if config file unreadable or contains syntax errors
  */
 
-import {FileConfiguration} from './fileConfiguration';
+import { FileConfiguration } from './fileConfiguration';
 
 describe('File configuration provider', () => {
     let fileConfig: FileConfiguration;
@@ -21,7 +21,7 @@ describe('File configuration provider', () => {
     let keysNotInFile: string[];
 
     // Read file configuration
-    beforeEach( done => async function() {
+    beforeEach(done => async function () {
         // Silence console.log with a spy
         spyOn(console, 'log');
         // Prevent state leakage between specs
@@ -63,12 +63,12 @@ describe('File configuration provider', () => {
         expect(fileConfig.get(['NESTED_OBJECT', 'cherries', 'royal ann'])).toEqual(null);
     });
 
-    it('throws an error when using getString on a non-string type', () => {
-        expect( () => fileConfig.get('FILE_KEY_1') ).not.toThrow();
-        expect( () => fileConfig.get('FILE_KEY_2') ).not.toThrow();
-        expect( () => fileConfig.getString('FILE_FRUIT_OBJECT') ).toThrow();
-        expect( () => fileConfig.  getString(['NESTED_OBJECT', 'apples', 'gala']))
-            .toThrow();
+    it('does not throw an error when using getString() on a non-string value', () => {
+        expect(() => fileConfig.get('FILE_KEY_1')).not.toThrow();
+        expect(() => fileConfig.get('FILE_KEY_2')).not.toThrow();
+        expect(() => fileConfig.getString('FILE_FRUIT_OBJECT')).not.toThrow();
+        expect(() => fileConfig.getString(['NESTED_OBJECT', 'apples', 'gala']))
+            .not.toThrow();
         expect(() => fileConfig.getString(['NESTED_OBJECT', 'apples', 'honeycrisp']))
             .not.toThrow();
     });
@@ -79,7 +79,7 @@ describe('File configuration provider with bad config file', () => {
     let missingFilename: string;
     let malformedFilename: string;
 
-    beforeEach( () => {
+    beforeEach(() => {
         // Silence console.log with spy; also used in a spec
         spyOn(console, 'log');
         // Prevent state leakage between specs
@@ -88,12 +88,12 @@ describe('File configuration provider with bad config file', () => {
         fileConfig = new FileConfiguration();
     });
 
-    it('should log when user-config file is missing', done => async function() {
+    it('should log when user-config file is missing', done => async function () {
         await fileConfig.initialize(missingFilename);
         expect(console.log).toHaveBeenCalled();
     }().then(done, done.fail));
 
-    it('should throw when user-config file is malformed', done => async function() {
+    it('should throw when user-config file is malformed', done => async function () {
         await fileConfig.initialize(malformedFilename);
     }().then(done.fail, done));  // note switch of done and done.fail arguments
 });

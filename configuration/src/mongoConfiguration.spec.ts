@@ -11,8 +11,8 @@
  *      - initialization waits correct number of seconds for DB connection
  */
 
-import {MongoClient} from 'mongodb';
-import {MongoConfiguration} from './mongoConfiguration';
+import { MongoClient } from 'mongodb';
+import { MongoConfiguration } from './mongoConfiguration';
 
 describe('Mongo configuration provider', () => {
 
@@ -25,11 +25,11 @@ describe('Mongo configuration provider', () => {
 
             // Spy stubs
             const findOneStub = jasmine.createSpy('findOne')
-                .and.callFake( (_, callback) => {
+                .and.callFake((_, callback) => {
                     callback(null, mongoDocument);
-            });
+                });
             const updateOneStub = jasmine.createSpy('updateOne')
-                .and.callFake( (_, set, __) => {
+                .and.callFake((_, set, __) => {
                     const update = set['$set'];
                     const key = Object.keys(update)[0];
                     const value = update[key];
@@ -37,16 +37,16 @@ describe('Mongo configuration provider', () => {
                 });
 
             const collectionStub = jasmine.createSpy('collection').and.returnValue({
-                    'findOne': findOneStub,
-                    'updateOne': updateOneStub
+                'findOne': findOneStub,
+                'updateOne': updateOneStub
             });
 
             // Spy on MongoClient's connect method by allowing the ability
             // to get a stubbed collection object from db.collection(collectionName)
-            spyOn(MongoClient, 'connect').and.callFake( (_, callback) => {
+            spyOn(MongoClient, 'connect').and.callFake((_, callback) => {
                 const databaseStub = {
                     collection: collectionStub,
-                    close: () => {}
+                    close: () => { }
                 };
                 callback(null, databaseStub);
             });
@@ -54,7 +54,7 @@ describe('Mongo configuration provider', () => {
             // act: Initialize mongoConfig instance
             await mongoConfig.initialize({
                 mongoUri: inputMongoUri,
-                logger: () => {}
+                logger: () => { }
             });
 
             // Expect the Mongo connection to be called with provided Mongo URI (and callback)
@@ -70,11 +70,11 @@ describe('Mongo configuration provider', () => {
 
             // Spy stubs
             const findOneStub = jasmine.createSpy('findOne')
-                .and.callFake( (_, callback) => {
+                .and.callFake((_, callback) => {
                     callback(null, mongoDocument);
-            });
+                });
             const updateOneStub = jasmine.createSpy('updateOne')
-                .and.callFake( (_, set, __) => {
+                .and.callFake((_, set, __) => {
                     const update = set['$set'];
                     const key = Object.keys(update)[0];
                     const value = update[key];
@@ -82,16 +82,16 @@ describe('Mongo configuration provider', () => {
                 });
 
             const collectionStub = jasmine.createSpy('collection').and.returnValue({
-                    'findOne': findOneStub,
-                    'updateOne': updateOneStub
+                'findOne': findOneStub,
+                'updateOne': updateOneStub
             });
 
             // Spy on MongoClient's connect method by allowing the ability
             // to get a stubbed collection object from db.collection(collectionName)
-            spyOn(MongoClient, 'connect').and.callFake( (_, callback) => {
+            spyOn(MongoClient, 'connect').and.callFake((_, callback) => {
                 const databaseStub = {
                     collection: collectionStub,
-                    close: () => {}
+                    close: () => { }
                 };
                 callback(null, databaseStub);
             });
@@ -99,7 +99,7 @@ describe('Mongo configuration provider', () => {
             // act: Initialize mongoConfig instance
             await mongoConfig.initialize({
                 mongoUri: inputMongoUri,
-                logger: () => {}
+                logger: () => { }
             });
 
             // Expect the Mongo connection to be called with provided Mongo URI (and callback)
@@ -117,11 +117,11 @@ describe('Mongo configuration provider', () => {
 
             // Spy stubs
             const findOneStub = jasmine.createSpy('findOne')
-                .and.callFake( (_, callback) => {
+                .and.callFake((_, callback) => {
                     callback(null, mongoDocument);
-            });
+                });
             const updateOneStub = jasmine.createSpy('updateOne')
-                .and.callFake( (_, set, __) => {
+                .and.callFake((_, set, __) => {
                     const update = set['$set'];
                     const key = Object.keys(update)[0];
                     const value = update[key];
@@ -129,16 +129,16 @@ describe('Mongo configuration provider', () => {
                 });
 
             const collectionStub = jasmine.createSpy('collection').and.returnValue({
-                    'findOne': findOneStub,
-                    'updateOne': updateOneStub
+                'findOne': findOneStub,
+                'updateOne': updateOneStub
             });
 
             // Spy on MongoClient's connect method by allowing the ability
             // to get a stubbed collection object from db.collection(collectionName)
-            spyOn(MongoClient, 'connect').and.callFake( (_, callback) => {
+            spyOn(MongoClient, 'connect').and.callFake((_, callback) => {
                 const databaseStub = {
                     collection: collectionStub,
-                    close: () => {}
+                    close: () => { }
                 };
                 callback(null, databaseStub);
             });
@@ -146,7 +146,7 @@ describe('Mongo configuration provider', () => {
             // act: Initialize mongoConfig instance
             await mongoConfig.initialize({
                 mongoUri: inputMongoUri,
-                logger: () => {}
+                logger: () => { }
             });
 
             // Expect the Mongo connection to be called with provided Mongo URI (and callback)
@@ -166,7 +166,7 @@ describe('Mongo configuration provider', () => {
         let updateOneStub;
 
         // Prevent state leakage between specs; set spies
-        beforeEach( done => async function() {
+        beforeEach(done => async function () {
             spyOn(console, 'log');
 
             // Reset state
@@ -190,27 +190,27 @@ describe('Mongo configuration provider', () => {
 
             // Spy stubs
             findOneStub = jasmine.createSpy('findOne')
-                .and.callFake( (_, callback) => {
+                .and.callFake((_, callback) => {
                     callback(null, mongoDocument);
-            });
+                });
             updateOneStub = jasmine.createSpy('updateOne')
-                .and.callFake( (_, set, __) => {
+                .and.callFake((_, set, __) => {
                     const update = set['$set'];
                     const key = Object.keys(update)[0];
                     const value = update[key];
                     mongoDocument[key] = value;
                 });
             collectionStub = jasmine.createSpy('collection').and.returnValue({
-                    'findOne': findOneStub,
-                    'updateOne': updateOneStub
+                'findOne': findOneStub,
+                'updateOne': updateOneStub
             });
 
             // Spy on MongoClient's connect method by allowing the ability
             // to get a stubbed collection object from db.collection(collectionName)
-            spyOn(MongoClient, 'connect').and.callFake( (_, callback) => {
+            spyOn(MongoClient, 'connect').and.callFake((_, callback) => {
                 const databaseStub = {
                     collection: collectionStub,
-                    close: () => {}
+                    close: () => { }
                 };
                 callback(null, databaseStub);
             });
@@ -218,7 +218,7 @@ describe('Mongo configuration provider', () => {
             // Initialize mongoConfig instance
             await mongoConfig.initialize({
                 mongoUri: mongoUri,
-                logger: () => {}
+                logger: () => { }
             });
             // Expect the Mongo connection to be called with provided Mongo URI (and callback)
             expect(MongoClient.connect)
@@ -229,7 +229,7 @@ describe('Mongo configuration provider', () => {
             expect(findOneStub).toHaveBeenCalledWith({}, jasmine.any(Function));
         }().then(done, done.fail));
 
-        afterEach( () => {
+        afterEach(() => {
             // Check that the logger param is used, not the global console.log
             expect(console.log).not.toHaveBeenCalled();
         });
@@ -253,17 +253,17 @@ describe('Mongo configuration provider', () => {
             expect(mongoConfig.get(['NESTED_OBJECT', 'cherries', 'royal ann'])).toEqual(null);
         });
 
-        it('throws an error when using getString on a non-string type', () => {
-            expect( () => mongoConfig.get('KEY_1') ).not.toThrow();
-            expect( () => mongoConfig.get('KEY_2') ).not.toThrow();
-            expect( () => mongoConfig.getString('FRUIT_OBJECT') ).toThrow();
-            expect( () => mongoConfig.  getString(['NESTED_OBJECT', 'apples', 'gala']))
-                .toThrow();
+        it('does not throw an error when using getString() on a non-string value', () => {
+            expect(() => mongoConfig.get('KEY_1')).not.toThrow();
+            expect(() => mongoConfig.get('KEY_2')).not.toThrow();
+            expect(() => mongoConfig.getString('FRUIT_OBJECT')).not.toThrow();
+            expect(() => mongoConfig.getString(['NESTED_OBJECT', 'apples', 'gala']))
+                .not.toThrow();
             expect(() => mongoConfig.getString(['NESTED_OBJECT', 'apples', 'honeycrisp']))
                 .not.toThrow();
         });
 
-        it('sets values correctly', done => async function() {
+        it('sets values correctly', done => async function () {
             const newVal1: string = 'new-val-1';
             const newVal2: string[] = ['new', 'val', '2'];
             // Check keys's initial values
@@ -278,7 +278,7 @@ describe('Mongo configuration provider', () => {
             expect(mongoConfig.get('NOT_PRESENT_1')).toEqual(newVal2);
         }().then(done, done.fail));  // execute async function then call done/done.fail
 
-        it('waits for required keys', done => async function() {
+        it('waits for required keys', done => async function () {
             const requiredKeys: string[] = ['required-key-1', 'required-key-2'];
             spyOn(mongoConfig, 'get').and.returnValue(null);
             expect(mongoConfig.get).not.toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe('Mongo configuration provider', () => {
                     mongoUri: mongoUri,
                     requiredKeys: requiredKeys,
                     secondsToRetry: 3,
-                    logger: () => {}
+                    logger: () => { }
                 });
                 done.fail();  // expect initialization to fail
             } catch (err) {
