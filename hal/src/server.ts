@@ -54,7 +54,7 @@ export class Server {
         }
         return api;
     }
-    
+
     // Generate an automated documentation Express handler for the given namespace
     private static autodoc(app: express.Application, args: Arguments.Class.Provides): express.RequestHandler {
         return (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -119,7 +119,7 @@ export class Server {
             Server.linker.registerLink(server, provides.rel, template, Object.assign({ verb, href, links }, provides.options));
         }
 
-        // Bind the handlers in promises; Express does not use the return values of its handlers, 
+        // Bind the handlers in promises; Express does not use the return values of its handlers,
         // and this allows us to properly catch error results from async methods (success results
         // are already supported via the next() or res callbacks)
         let handlers: express.RequestHandler[] = middleware.map(cb =>
@@ -205,7 +205,7 @@ export class Server {
                     });
                 }
             }
-            
+
             // Register individual routes
             for (const route of routes) {
                 if (app[route.verb]) {
@@ -214,7 +214,7 @@ export class Server {
                     console.error(`${route.verb.toUpperCase()} is not a valid HTTP method.`);
                 }
             }
-            
+
             // Resolve server-wide error-handling middleware
             for (const middleware of proto.middleware.filter(middleware => middleware.options.error)) {
                 app.use(middleware.handler);
@@ -231,10 +231,10 @@ export class Server {
                 return link;
             });
         }
-        
+
         return server[Server.App];
     }
-    
+
     // An Express handler which provides HAL links to all discoverable routes
     static discovery(req: express.Request, res?: express.Response, next?: express.NextFunction): Hal.Resource {
         let body: Hal.Resource = {};
@@ -263,7 +263,7 @@ export class Server {
         Response.filter(hal, { links: link => link[Server.Link.Discoverable] });
         hal.json({});
         return body;
-    };
+    }
 }
 
 export namespace Server {

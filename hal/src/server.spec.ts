@@ -52,7 +52,7 @@ class TestApi {
     @route(Method.GET, '/default')
     @provides('default', { discoverable: true })
     @middleware(first)
-    @hal('mixed', 'middleware', 'NoHalBehavior', LinkRelation.Index, 'template', 'duplicate', 'extended')
+    @hal('mixed', 'middleware', 'NoHalBehavior', LinkRelation.Index, 'template', 'duplicate', 'extended', 'empty', 'partial', 'full')
     DefaultCase(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         res.link('extra');
         res.link('override', {
@@ -72,7 +72,7 @@ class TestApi {
         res.embed('extra', { value: 'test' });
         res.embed('custom', { value: 'test' }, { links: ['override'] });
         res.embed('parent', { value: 'parent' }).embed('child', { value: 'child' });
-        
+
         res.json({
             simple: 'simple',
             complex: {
@@ -97,57 +97,65 @@ class TestApi {
     MiddlewareExecutionOrder(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         throw new Error();
     }
-    
+
     @route(Method.DELETE, '/NoHalBehavior')
     @provides()
     @middleware(first)
     NoHalBehavior(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
     @route(Method.GET, '/index')
     @provides(LinkRelation.Index)
     DefaultRel(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
     @route(Method.GET, '/extra')
     @provides('extra')
     @hal('default')
     Extra(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
     @route(Method.GET, '/override')
     @provides('override')
     Override(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
     @route(Method.GET, '/template/:id')
     @provides('template', { id: 'id' })
     Template(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
+    @route(Method.GET, '/params/:first/:second?')
+    @provides('empty')
+    @provides('partial', { params: { second: undefined } })
+    @provides('full', { params: { first: 'first', second: undefined } })
+    Params(req: express.Request, res: express.Response, next: express.NextFunction) {
+        res.json({});
+    }
+
     @route(Method.GET, '/duplicate')
     @provides('duplicate')
     DuplicateGet(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
     @route(Method.PUT, '/duplicate')
     @provides('duplicate')
     DuplicatePut(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
     @route(Method.GET, '/distinct')
     @provides('duplicate')
     DuplicateDistinct(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({});
     }
-    
+
     @route(Method.GET, '/fallthrough/:id')
     @hal('template', { self: false })
     ParameterFallthrough(req: express.Request, res: express.Response & hal.Response, next: express.NextFunction) {
@@ -185,7 +193,7 @@ class TestApi {
     FilterSecond(req: express.Request, res: express.Response, next: express.NextFunction) {
         res.json({ value: 'second' });
     }
-};
+}
 
 @provides(TestApiName, { href: TestApiDocs })
 class ExtendedApi {
@@ -201,7 +209,7 @@ const AltApiDocs = 'http://www.adatum.com/docs/{rel}';
 @provides(AltApiName, { href: AltApiDocs })
 @provides('secondary')
 class AltApi {
-    
+
     @route(Method.GET, '/cross')
     @provides('cross', { discoverable: true })
     @hal('test:default')
@@ -297,7 +305,7 @@ describe('HAL API Tests', () => {
     let request: any;
     let router: express.Router;
     let app: express.Application;
-    
+
     function call(method: string, url: string) {
         return new Promise((resolve, reject) => {
             const resfn = (body: any) => (resolve(body), response);
@@ -313,7 +321,7 @@ describe('HAL API Tests', () => {
             app(request, response, (error: any) => error ? reject(error) : resolve());
         });
     }
-    
+
     function single<T>(map: { [rel: string]: T | T[] } = {}, rel: string): T {
         const item = map[rel];
         expect(item).toBeDefined();
@@ -323,7 +331,7 @@ describe('HAL API Tests', () => {
             return item;
         }
     }
-    
+
     function array<T>(map: { [rel: string]: T | T[] } = {}, rel: string): T[] {
         const item = map[rel];
         expect(item).toBeDefined();
@@ -333,11 +341,11 @@ describe('HAL API Tests', () => {
             throw new Error(`Expected ${rel} to be an array.`);
         }
     }
-    
+
     function testStandardLink(hal: Hal.Resource, ns: string, rel: string) {
         expect(single(hal._links, `${ns}:${rel}`).href).toBe(`/api/${ns}/${rel}`);
     }
-    
+
     function testCuries(hal: Hal.Resource, index: number, ns: string, href: string) {
         const curies = array(hal._links, 'curies');
         expect(curies[index]).toBeDefined();
@@ -353,13 +361,13 @@ describe('HAL API Tests', () => {
         router.use('/list', route(server.list));
 
         router.get('/', hal.discovery);
-        
+
         app = express();
         app.use('/api', router);
         app.use('/extended', route(server.extended));
     })();
 
-    it('Should execute middleware in listed order', done => {
+    it('Should execute middleware in listed order', (done: DoneFn) => {
         call('put', 'http://localhost/api/test/middleware').then(() => {
 
             expect(response.locals.order[0]).toBe('class');
@@ -370,7 +378,7 @@ describe('HAL API Tests', () => {
         }).then(done).catch(done.fail);
     });
 
-    it('Should respond with native JSON when no HAL behavior defined', done => {
+    it('Should respond with native JSON when no HAL behavior defined', (done: DoneFn) => {
         call('delete', 'http://localhost/api/test/NoHalBehavior').then((result: Hal.Resource) => {
 
             expect(result).toBeDefined();
@@ -378,29 +386,29 @@ describe('HAL API Tests', () => {
 
         }).then(done).catch(done.fail);
     });
-    
-    it('Should return expected HAL result', done => {
+
+    it('Should return expected HAL result', (done: DoneFn) => {
         call('get', 'http://localhost/api/test/default?test=true').then((result: Hal.Resource) => {
 
             // Test _links
             expect(result).toBeDefined();
             expect(result._links).toBeDefined();
-            
+
             // Test self link
             expect(single(result._links, 'self').href).toBe('/api/test/default?test=true');
-            
+
             // Test curies
             testCuries(result, 0, TestApiName, TestApiTemplate);
             testCuries(result, 1, AltApiName, AltApiDocs);
-            
+
             // Test standard links
             testStandardLink(result, TestApiName, 'mixed');
             testStandardLink(result, TestApiName, 'middleware');
             testStandardLink(result, TestApiName, 'NoHalBehavior');
-            
+
             // Test link-relation links
             expect(single(result._links, 'index').href).toBe('/api/test/index');
-            
+
             // Test templated links
             const templates = array(result._links, `${TestApiName}:template`);
             expect(templates.length).toBe(2);
@@ -413,13 +421,21 @@ describe('HAL API Tests', () => {
             const query = single(result._links, `${TestApiName}:query`);
             expect(query.href).toBe('/api/test/query/{param}?q=0');
             expect(query.templated).toBe(true);
-            
+
+            // Test partial-template links
+            const empty = single(result._links, `${TestApiName}:empty`);
+            expect(empty.href).toBe('/api/test/params/{first}/{second}');
+            const partial = single(result._links, `${TestApiName}:partial`);
+            expect(partial.href).toBe('/api/test/params/{first}');
+            const full = single(result._links, `${TestApiName}:full`);
+            expect(full.href).toBe('/api/test/params/first');
+
             // Test duplicate links
             const duplicates = array(result._links, `${TestApiName}:duplicate`);
             expect(duplicates.length).toBe(2);
             expect(duplicates[0].href).toBe('/api/test/duplicate');
             expect(duplicates[1].href).toBe('/api/test/distinct');
-            
+
             // Test added links
             testStandardLink(result, TestApiName, 'extra');
             expect(result._links![`${TestApiName}:override`]).toBeUndefined();
@@ -430,17 +446,17 @@ describe('HAL API Tests', () => {
 
             // Test shared-namespace links
             expect(single(result._links, `${TestApiName}:extended`).href).toBe('/extended/extended');
-            
+
             // Test embedded objects
             expect(result._embedded).toBeDefined();
-            
+
             const extraEmbedded = single(result._embedded, `${TestApiName}:extra`);
             expect(extraEmbedded).toBeDefined();
             expect(extraEmbedded['value']).toBe('test');
             expect(extraEmbedded._links).toBeDefined();
             expect(single(extraEmbedded._links, 'self').href).toBe('/api/test/extra');
             testStandardLink(extraEmbedded, TestApiName, 'default');
-            
+
             const customEmbedded = single(result._embedded, `${TestApiName}:custom`);
             expect(customEmbedded).toBeDefined();
             expect(customEmbedded['value']).toBe('test');
@@ -461,7 +477,7 @@ describe('HAL API Tests', () => {
             expect(single(childEmbedded._links, 'self').href).toBe('/api/test/child');
             expect(childEmbedded._links!['curies']).toBeUndefined();
             testStandardLink(childEmbedded, AltApiName, 'cross');
-    
+
             // Test content
             expect(result['simple']).toBe('simple');
             expect(result['complex']).toBeDefined();
@@ -473,30 +489,30 @@ describe('HAL API Tests', () => {
 
         }).then(done).catch(done.fail);
     });
-    
-    it('Cross-class rels should link properly', done => {
+
+    it('Cross-class rels should link properly', (done: DoneFn) => {
         call('get', 'http://localhost/api/alt/cross').then((result: Hal.Resource) => {
-        
+
             // Test curies
             testCuries(result, 0, TestApiName, TestApiTemplate);
-        
+
             // Test link
             testStandardLink(result, TestApiName, 'default');
- 
+
         }).then(done).catch(done.fail);
     });
-    
-    it('Discoverable routes should be discoverable', done => {
+
+    it('Discoverable routes should be discoverable', (done: DoneFn) => {
         const testDiscovery = (result: Hal.Resource) => {
 
             // Test _links
             expect(result).toBeDefined();
             expect(result._links).toBeDefined();
-            
+
             // Test curies
             testCuries(result, 0, TestApiName, TestApiTemplate);
             testCuries(result, 1, AltApiName, AltApiDocs);
-        
+
             // Test links
             testStandardLink(result, TestApiName, 'default');
             testStandardLink(result, AltApiName, 'cross');
@@ -508,28 +524,28 @@ describe('HAL API Tests', () => {
 
         call('get', 'http://localhost/api/').then(testDiscovery).then(done).catch(done.fail);
     });
-    
-    it('Parameters should fall through to subsequent links', done => {
+
+    it('Parameters should fall through to subsequent links', (done: DoneFn) => {
         call('get', 'http://localhost/api/test/fallthrough/name').then((result: Hal.Resource) => {
-        
+
             // Test _links
             expect(result).toBeDefined();
             expect(result._links).toBeDefined();
             expect(single(result._links, `${TestApiName}:template`).href).toBe('/api/test/template/name');
             expect(result._links!['self']).toBeUndefined();
- 
+
         }).then(done).catch(done.fail);
     });
 
-    it('Ensure async, query-parameter, and URI-templated routes are callable', done => {
+    it('Ensure async, query-parameter, and URI-templated routes are callable', (done: DoneFn) => {
         call('get', 'http://localhost/api/test/query/param?q=value').then(() => {
 
             expect(response.locals.param).toBe('param');
-            
+
         }).then(done).catch(done.fail);
     });
 
-    it('Ensure optional routes are callable in both forms', done => {
+    it('Ensure optional routes are callable in both forms', (done: DoneFn) => {
         call('get', 'http://localhost/api/test/optional').then((result: any) => {
 
             expect(result).toBeDefined();
@@ -543,7 +559,7 @@ describe('HAL API Tests', () => {
         }).then(done).catch(done.fail);
     });
 
-    it('Dynamic decorators function as well as the standard decorators', done => {
+    it('Dynamic decorators function as well as the standard decorators', (done: DoneFn) => {
         api(server.dynamic)
             .middleware(cls);
         api(server.dynamic, 'Handler')
@@ -559,14 +575,14 @@ describe('HAL API Tests', () => {
             // Test _links
             expect(result).toBeDefined();
             expect(result._links).toBeDefined();
-            
+
             // Test self link
             expect(single(result._links, 'self').href).toBe('/api/dynamic/handler');
 
             // Test curies
             testCuries(result, 0, TestApiName, TestApiTemplate);
             testCuries(result, 1, ParentApiName, '/api/dynamic' + ParentApiDocs);
-        
+
             // Test dynamic link
             testStandardLink(result, TestApiName, 'default');
 
@@ -581,7 +597,7 @@ describe('HAL API Tests', () => {
         }).then(done).catch(done.fail);
     });
 
-    it('Overridden rels do not provide their original CURIEs', done => {
+    it('Overridden rels do not provide their original CURIEs', (done: DoneFn) => {
         call('get', `http://localhost/api/list/list`).then((result: Hal.Resource) => {
 
             // Test _links
@@ -597,7 +613,7 @@ describe('HAL API Tests', () => {
         }).then(done).catch(done.fail);
     });
 
-    it('CURIEs are constant over multiple calls', done => {
+    it('CURIEs are constant over multiple calls', (done: DoneFn) => {
         call('get', `http://localhost/api/list/item`).then((result: Hal.Resource) => {
 
             // Test _links
@@ -619,7 +635,7 @@ describe('HAL API Tests', () => {
         }).then(done).catch(done.fail);
     });
 
-    it('Automatic documentation works as expected', done => {
+    it('Automatic documentation works as expected', (done: DoneFn) => {
         call('get', `http://localhost/api/list/docs/list/item`).then((result: string) => {
 
             // Test basic automatic documentation
@@ -643,7 +659,7 @@ describe('HAL API Tests', () => {
         }).then(done).catch(done.fail);
     });
 
-    it('Filter decorators work as expected', done => {
+    it('Filter decorators work as expected', (done: DoneFn) => {
         call('get', 'http://localhost/api/test/filter?filter=true').then((result: any) => {
 
             expect((result as any).value).toBe('first');
@@ -664,9 +680,10 @@ describe('HAL API Tests', () => {
         }).then(done).catch(done.fail);
     });
 
-    it('Server utility methods return expected results', done => {
+    it('Server utility methods return expected results', (done: DoneFn) => {
         expect(util(server.test).links('default')).toEqual([{ href : '/api/test/default' }]);
-        expect(util(server.test).href('template', { id: 'value' })).toEqual('/api/test/template/value');
+        expect(util(server.test).href('empty', { first: 'first', second: 'second' })).toEqual('/api/test/params/first/second');
+        expect(util(server.test).href('partial', { first: 'first' })).toEqual('/api/test/params/first');
         expect(util(server.alt).href('discoverable')).toEqual('/api/alt/discoverable');
         done();
     });

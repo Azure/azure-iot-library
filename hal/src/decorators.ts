@@ -27,13 +27,13 @@ export namespace provides {
         export interface Rel extends hal.Metadata {
             discoverable?: boolean;
             description?: string | ((ns: string, rel: string, req: express.Request) => string);
-        };
+        }
         export interface Namespace {
             href?: Href;
             auto?: boolean;
             template?: string;
             fallback?: (ns: string, rel: string, req: express.Request) => Template;
-        };
+        }
     }
 }
 
@@ -84,7 +84,7 @@ export function route(first: Verb | Object, second?: Href): express.Application 
     }
 }
 
-export function middleware(handler: express.RequestHandler | express.ErrorHandler, options?: middleware.Options): ClassDecorator & MethodDecorator {
+export function middleware(handler: express.RequestHandler | express.ErrorRequestHandler, options?: middleware.Options): ClassDecorator & MethodDecorator {
     return function (target: Function | Object, methodName?: string | symbol, descriptor?: ExpressHandlerDescriptor): Function | ExpressHandlerDescriptor | void {
         if (target instanceof Function) {
             // -- Class decorator --
