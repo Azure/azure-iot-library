@@ -11,7 +11,7 @@ export enum Method {
     POST,
     DELETE,
     PATCH
-};
+}
 
 export type Verb = string | Method;
 
@@ -137,11 +137,11 @@ export namespace Hal {
         title?: string;
         hreflang?: string;
     }
-    
-    export type Links = { [rel: string]: Link | Link[] }
-    
-    export type Embedded = { [rel: string]: Resource | Resource[] }
-    
+
+    export type Links = { [rel: string]: Link | Link[] };
+
+    export type Embedded = { [rel: string]: Resource | Resource[] };
+
     export interface Resource {
         _links?: Links;
         _embedded?: Embedded;

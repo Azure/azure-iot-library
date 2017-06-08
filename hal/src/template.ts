@@ -80,7 +80,7 @@ export class Template {
         return link;
     }
 
-    // Convert a templated URI into the nearest-possible templated Express path 
+    // Convert a templated URI into the nearest-possible templated Express path
     static express(href: string): string {
         // If this is not a templated URI, pass it through
         if (href.search(Template.l1) < 0) {

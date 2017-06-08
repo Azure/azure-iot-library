@@ -43,7 +43,7 @@ export class Linker {
         // default relations cannot be cross-class, because they are not namespaced
         return callback(base, rel, '');
     }
-    
+
     // Parse the provided rel, and map it via a translation callback on each of its routes,
     // providing the registered link data for each route
     handle<T>(
@@ -53,12 +53,11 @@ export class Linker {
     ): T[] {
         return this.parse(base, rel, (server, parsed) => {
             const routes = Data.from(server).links[parsed];
-            return routes ? Object.keys(routes).map(route => {
-                return callback(server, route, routes[route]);
-            }) : [];
+            return routes ? Object.keys(routes).map(route =>
+                callback(server, route, routes[route])) : [];
         });
     }
-    
+
     // Parse the provided rel and return it in a normalized form
     normalize(base: Object, rel: Rel): Rel {
         return this.parse(base, rel, (server, parsed) => parsed);
@@ -66,18 +65,17 @@ export class Linker {
 
     // Obtain the registered documentation for the namespace of the provided rel (if any)
     getDocs(base: Object, rel: Rel): Linker.Docs {
-        return this.parse(base, rel, (server, parsed, ns) => {
-            return Data.from(server).docsCb(Object.assign({}, Data.from(server).docs[ns]) || { name: '', href: '' });
-        });
+        return this.parse(base, rel, (server, parsed, ns) =>
+            Data.from(server).docsCb(Object.assign({}, Data.from(server).docs[ns]) || { name: '', href: '' }));
     }
-    
+
     // Obtain the link data registered for the provided rel
     getLinks(base: Object, rel: Rel): hal.Overrides[] {
-        return this.handle(base, rel, (server, route, links) => {
+        return this.handle(base, rel, (server, route, links) =>
             // Merge links for multiple verbs on a single route into one
-            return Data.from(server).linkCb({
-                server: server,
-                
+            Data.from(server).linkCb({
+                server,
+
                 // All the rels and paths should be the same, so just use the first
                 rel: links[0].rel,
                 href: links[0].href,
@@ -85,18 +83,18 @@ export class Linker {
                 // Merge the links into a single array, using the Set object to ensure uniqueness
                 links: Array.from(new Set(links.reduce<Rel[]>((links, link) => links.concat(link.links || []), []))),
 
-                // If any of the verbs guarantee an array, do so here 
+                // If any of the verbs guarantee an array, do so here
                 array: links.reduce((array, link) => link.array || array, false),
-                
+
                 // For these options, prefer the value from the verbs in registration order
                 id: first<string>(links, 'id'),
                 title: first<string>(links, 'title'),
-                
+
                 // Merge params into a single object; in order to keep the same order preference
                 // mentioned above, we reverse the array, so that the preferred verbs are applied last
                 params: Object.assign({}, ...links.reverse().map(link => link.params || {}))
-            }, links);
-        });
+            }, links)
+        );
     }
 
     // Register a namepace and documentation link to the provided server object

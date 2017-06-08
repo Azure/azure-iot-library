@@ -29,21 +29,21 @@ export class Response implements hal.Response {
     private static resource(resolved: hal.Overrides, root?: hal.Response, data?: any): hal.Response {
         let res = {};
 
-        res[Response.Private] = <Response.Private>{
+        res[Response.Private] = {
             server: resolved.server,
             params: resolved.params,
             hal: halson(data || {}),
             root: root || res
-        };
-        
+        } as Response.Private;
+
         let resource = Object.assign(res, {
             link: Response.prototype.link.bind(res),
             embed: Response.prototype.embed.bind(res),
             docs: Response.prototype.docs.bind(res)
         });
-        
+
         Response.initialize(resource, resolved, !!data);
-        
+
         return resource;
     }
 
@@ -54,7 +54,7 @@ export class Response implements hal.Response {
             json: Response.prototype.json.bind(res, res.json.bind(res))
         });
     }
-    
+
     // Initialize a new response object (acts as a constructor)
     private static initialize(response: hal.Response, resolved: hal.Overrides, template: boolean) {
         // Add all of the default links
@@ -86,7 +86,7 @@ export class Response implements hal.Response {
     static resolve(server: Object, rel: Rel, params: any, overrides: hal.Overrides): hal.Overrides[] {
         // Initialize the resolved link from the request
         let base: hal.Overrides = { rel, params, links: [], server: overrides.server || server };
-        
+
         const links = Server.linker.getLinks(base.server!, base.rel!);
 
         // If the links failed to resolve, provide a dummy link object in order to ensure
@@ -94,12 +94,12 @@ export class Response implements hal.Response {
         return (links.length > 0 ? links : [{}]).map(link => {
             // Splice the automatic link resolution with the overrides
             let resolved = Object.assign({}, base, link, overrides);
-            
+
             // Unless they were overridden, params should be a union of the provided params
             if (!overrides.params) {
                 resolved.params = Object.assign({}, base.params, link.params);
             }
-            
+
             // Resolve the real id from explicitly present params
             resolved.id = resolved.id && resolved.params[resolved.id];
 
@@ -113,7 +113,7 @@ export class Response implements hal.Response {
                 // to prevent conflict between Express and URI syntax
                 resolved.href = Object.assign(url.parse(Template.apply(link.href! as string, resolved.params)), overrides.href);
             }
-            
+
             return resolved;
         });
     }
@@ -126,7 +126,7 @@ export class Response implements hal.Response {
             response.docs(docs.name, docs.href);
         }
     }
-    
+
     // Add a link to the HAL response for the given rel, with any provided overrides
     link(rel: Rel, overrides: hal.Overrides = {}) {
          for (const resolved of Response.resolve(_private(this).server, rel, _private(this).params, overrides)) {
@@ -140,7 +140,7 @@ export class Response implements hal.Response {
             }
         }
     }
-    
+
     // Add an embedded value to the HAL response for the given rel, with any provided overrides;
     // returns a HAL response object representing the embedded object, for further linking/embedding
     embed(rel: Rel, value: Object, overrides: hal.Overrides = {}): hal.Response {
@@ -160,7 +160,7 @@ export class Response implements hal.Response {
                 _private(this).root, value);
         }
     }
-    
+
     // Add a documentation link to the HAL response
     docs(name: string, href: Href) {
         // Add the curie shorthand to the root object if it's not already present

@@ -27,13 +27,13 @@ export namespace Api {
                 middleware: []
             } as Arguments.Class;
         }
-        
+
         provides(namespace: string = this.name, options: provides.Options.Namespace = {}): this {
             add<Arguments.Class.Provides>(this, 'provides', { namespace, options });
             return this;
         }
 
-        middleware(handler: express.RequestHandler | express.ErrorHandler, options: middleware.Options = {}): this {
+        middleware(handler: express.RequestHandler | express.ErrorRequestHandler, options: middleware.Options = {}): this {
             add<Arguments.Class.Middleware>(this, 'middleware', { handler, options });
             return this;
         }

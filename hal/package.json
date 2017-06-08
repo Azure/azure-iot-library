@@ -1,28 +1,47 @@
 {
   "name": "@azure-iot/hal",
   "description": "Decorator library for HAL-based routes",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "scripts": {
     "prebuild": "npm run lint",
     "build": "tsc",
     "pretest": "npm run build",
-    "test": "istanbul cover --include-all-sources -x='**/*.spec.*' node_modules/jasmine-node/lib/jasmine-node/cli.js -- .",
-    "lint": "tslint ./src/**/*.ts",
-    "prepublish": "typings install && npm run build"
+    "test": "nyc jasmine --config=jasmine.json",
+    "lint": "tslint ./src/**/*.ts -e ./src/**/*.d.ts --fix",
+    "prepublish": "npm run build"
   },
   "license": "SEE LICENSE IN ./license.txt",
   "devDependencies": {
-    "istanbul": "^0.4.3",
-    "jasmine-core": "2.4.1",
-    "jasmine-node": "^1.14.5",
-    "tslint": "^3.8.1",
-    "typescript": "^2.0.3",
-    "typings": "^1.4.0"
+    "@types/jasmine": "^2.5.51",
+    "@types/mustache": "^0.8.29",
+    "@types/node": "^7.0.29",
+    "istanbul": "^0.4.5",
+    "jasmine": "^2.6.0",
+    "nyc": "^11.0.2",
+    "tslint": "^5.4.3",
+    "typescript": "^2.3.4"
   },
   "dependencies": {
-    "express": "^4.14.0",
+    "@types/express": "^4.0.35",
+    "express": "^4.15.3",
     "halson": "^2.3.1",
-    "mustache": "^2.2.1",
-    "path-to-regexp": "^1.6.0"
+    "mustache": "^2.3.0",
+    "path-to-regexp": "^1.7.0"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "all": true,
+    "include": [
+      "src/**/*"
+    ],
+    "exclude": [
+      "dist/**/*.spec.js",
+      "dist/**/*.d.ts"
+    ],
+    "reporter": [
+      "text-summary"
+    ]
   }
 }

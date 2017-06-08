@@ -19,7 +19,7 @@ class ServerUtil {
     }
 
     static href(this: Object, rel: Rel, params?: any): string {
-        const links = Response.resolve(this, rel, {}, params ? { params } : {}).map(resolved => Template.link(resolved));
+        const links = Response.resolve(this, rel, params || {}, {}).map(resolved => Template.link(resolved));
         return (links.find(link => link[Server.Link.Discoverable]) || links[0]).href;
     }
 }
