@@ -3,9 +3,8 @@
 import { readFile, access, F_OK } from 'fs';
 import { IConfiguration } from './IConfiguration';
 import { getVal } from './getVal';
- import * as azureStorage from 'azure-storage';
+import * as azureStorage from 'azure-storage';
 
-const containerName: string = 'environments';
 const fileConsumedMsg: string = 'User config file found';
 const fileReadingErrMsg: string =
     'User config file found but unable to be read';
@@ -28,8 +27,11 @@ export class FileConfiguration implements IConfiguration {
         let fileConfigPromise;
         if (storageConnectionString) {
             fileConfigPromise = new Promise<string>((resolve, reject) => {
-               let blobService = new azureStorage.BlobService(storageConnectionString);
-                blobService.getBlobToText(containerName, configFilename, (error, text) => {
+                let blobService = new azureStorage.BlobService(storageConnectionString);
+                let containerName = configFilename.split('/')[0];
+                let regexp = new RegExp(`^${containerName}\/`);
+                let blobName = configFilename.replace(regexp, '');
+                blobService.getBlobToText(containerName, blobName, (error, text) => {
                     if (error)
                         reject();
                     resolve(text);
