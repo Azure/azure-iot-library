@@ -21,7 +21,7 @@
     "node": ">=6.1.0"
   },
   "dependencies": {
-    "adal-node": "0.1.22",
+    "adal-node": "^0.1.27",
     "azure-keyvault": "^0.10.1",
     "azure-storage": "^2.1.0",
     "mongodb": "^2.1.18"
