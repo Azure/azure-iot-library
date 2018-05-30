@@ -98,12 +98,12 @@ export class Configuration implements IConfiguration {
         let remoteFileName: string = await envConfig.getString(externalConfigKey);
         if (remoteFileName) {
             params.logger('External configuration file found.');
+            params.configFilename = remoteFileName;
             let infraKVConfigOpts = envConfig.get<KeyVaultConfigurationOptions>(infraKeyVaultConfigKey);
             if (infraKVConfigOpts) {
                 params.logger('Initializing Infrastructure KeyVault connection');
                 let infraKeyVaultConfiguration = KeyVaultConfiguration.initialize(infraKVConfigOpts);
                 let storageAccountConnectionString: string = (await infraKeyVaultConfiguration.getSecret(infraKVConfigOpts.storageConnectionStringId)).value;
-                params.configFilename = remoteFileName;
                 params.storageAccountConnectionString = storageAccountConnectionString;
             } else {
                 params.logger('Infrastructure keyVault connection not initialized.');
