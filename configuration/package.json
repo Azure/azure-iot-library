@@ -1,6 +1,6 @@
 {
   "name": "@azure-iot/configuration",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Configuration support for Azure IoT microservices",
   "author": "Hunter Gatewood (https://hcgatewood.github.com/about)",
   "license": "See license in ./license.txt",
