@@ -209,3 +209,75 @@ describe('Configuration provider with no Mongo URI', () => {
         }
     }());
 });
+
+describe('Configuration loaded using wrap', () => {
+
+    it('get should return a number value when found', () => {
+        const inputConfig = {
+            a: 1
+        };
+
+        config.wrap(inputConfig);
+
+        expect(config.get<number>('a')).toBe(1);
+    });
+
+    it('get should return a string when found', () => {
+        const inputConfig = {
+            a: 'x'
+        };
+
+        config.wrap(inputConfig);
+
+        expect(config.get('a')).toBe('x');
+    });
+
+    it('get should return a nested value', () => {
+        const inputConfig = {
+            a: {
+                b: 'x'
+            }
+        };
+
+        config.wrap(inputConfig);
+
+        expect(config.get([ 'a', 'b' ])).toBe('x');
+    });
+
+    it('wrap should clear previous values', () => {
+        const inputConfig1 = {
+            a: 1
+        };
+
+        const inputConfig2 = {
+            b: 1
+        };
+
+        config.wrap(inputConfig1);
+        config.wrap(inputConfig2);
+
+        expect(config.get<number>('a')).toBeNull();
+        expect(config.get<number>('b')).toBe(1);
+    });
+
+    it('wrap of a null config should be empty and not throw', () => {
+        const inputConfig: any = null;
+
+        config.wrap(inputConfig);
+
+        expect(config.get<number>('a')).toBeNull();
+    });
+
+    it('wrap should not include env vars', () => {
+        const inputConfig = {
+            a: 1
+        };
+
+        config.wrap(inputConfig);
+
+        // windows
+        expect(config.getString('USERPROFILE')).toBeNull();
+        // non-windows
+        expect(config.getString('HOME')).toBeNull();
+    });
+});

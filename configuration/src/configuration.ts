@@ -57,6 +57,11 @@ export interface Secret {
     contentType?: string;
 }
 
+// A raw config representation containing only key value pairs
+export interface ResolvedConfigInput {
+    [key: string]: any;
+}
+
 export class Configuration implements IConfiguration {
     private providers: IConfiguration[] = [];
     private keyVaultConfiguration: KeyVaultConfiguration = null;
@@ -152,6 +157,23 @@ export class Configuration implements IConfiguration {
         } else {
             params.logger('KeyVault connection not initialized.');
         }
+    }
+
+    /**
+     * Initialize configuration using a pre-loaded config. 
+     * All values will be copied from the input config
+     * and no additional calls to load env variables 
+     * or files will be made.
+     * 
+     * Null inputs will be treated as empty
+     * 
+     * @param resolvedConfig a pre-loaded config object
+     */
+    public wrap(resolvedConfig: ResolvedConfigInput): void {
+        // remove any existing providers
+        // load values from the input config
+        // DefaultConfiguration handles null configs as empty
+        this.providers = [ new DefaultConfiguration(resolvedConfig) ];
     }
 
     private addDefaultParams(params: ConfigOptions): ConfigOptions {
