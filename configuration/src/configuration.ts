@@ -160,13 +160,13 @@ export class Configuration implements IConfiguration {
     }
 
     /**
-     * Initialize configuration using a pre-loaded config. 
+     * Initialize configuration using a pre-loaded config.
      * All values will be copied from the input config
-     * and no additional calls to load env variables 
+     * and no additional calls to load env variables
      * or files will be made.
-     * 
+     *
      * Null inputs will be treated as empty
-     * 
+     *
      * @param resolvedConfig a pre-loaded config object
      */
     public wrap(resolvedConfig: ResolvedConfigInput): void {
@@ -174,6 +174,14 @@ export class Configuration implements IConfiguration {
         // load values from the input config
         // DefaultConfiguration handles null configs as empty
         this.providers = [ new DefaultConfiguration(resolvedConfig) ];
+
+        // Optionally add the keyvault provider:
+        const keyVaultConfigOptions = this.get<KeyVaultConfigurationOptions>(keyVaultConfigKey);
+        if (keyVaultConfigOptions) {
+            this.keyVaultConfiguration = KeyVaultConfiguration.initialize(keyVaultConfigOptions);
+        } else {
+            this.keyVaultConfiguration = null;
+        }
     }
 
     private addDefaultParams(params: ConfigOptions): ConfigOptions {

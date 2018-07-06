@@ -10,8 +10,9 @@
  *        (file, env, mongo, then default)
  */
 
-import {MongoClient} from 'mongodb';
-import {config} from './configuration';
+import { MongoClient } from 'mongodb';
+import { config } from './configuration';
+import { KeyVaultConfiguration } from './keyVaultConfiguration';
 
 describe('Configuration provider', () => {
     let configFilename: string;
@@ -26,7 +27,7 @@ describe('Configuration provider', () => {
     let findOneStub;
     let updateOneStub;
 
-    beforeEach( done => async function() {
+    beforeEach(done => async function () {
         spyOn(console, 'log');
 
         // Prevent state leakage between specs
@@ -84,26 +85,26 @@ describe('Configuration provider', () => {
 
         // Stub mongoConfig calls
         findOneStub = jasmine.createSpy('findOne')
-            .and.callFake( (_, callback) => {
+            .and.callFake((_, callback) => {
                 callback(null, mongoKeys);
-        });
+            });
         updateOneStub = jasmine.createSpy('updateOne')
-            .and.callFake( (_, set, __) => {
+            .and.callFake((_, set, __) => {
                 const update = set['$set'];
                 const key = Object.keys(update)[0];
                 const value = update[key];
                 mongoKeys[key] = value;
             });
         collectionStub = jasmine.createSpy('collection').and.returnValue({
-                'findOne': findOneStub,
-                'updateOne': updateOneStub
+            'findOne': findOneStub,
+            'updateOne': updateOneStub
         });
         // Spy on MongoClient's connect method by allowing the ability
         // to get a stubbed collection object from db.collection(collectionName)
-        spyOn(MongoClient, 'connect').and.callFake( (_, callback) => {
+        spyOn(MongoClient, 'connect').and.callFake((_, callback) => {
             const databaseStub = {
                 collection: collectionStub,
-                close: () => {}
+                close: () => { }
             };
             callback(null, databaseStub);
         });
@@ -112,12 +113,12 @@ describe('Configuration provider', () => {
             defaultValues: defaultKeys,
             requiredKeys: ['ENV_KEY_1', 'MONGO_KEY_1'],
             configFilename: configFilename,
-            logger: () => {}  // silence logs
+            logger: () => { }  // silence logs
         };
         await config.initialize(initializeParams);
     }().then(done, done.fail));
 
-    afterEach( () => {
+    afterEach(() => {
         // Check that the logger param is used, not the global console.log
         expect(console.log).not.toHaveBeenCalled();
     });
@@ -154,7 +155,7 @@ describe('Configuration provider', () => {
         expect(config.get(['NESTED_OBJECT', 'apples', 'northern spy'])).toEqual('default');
     });
 
-    it('get secret should return null for unset values', done => async function() {
+    it('get secret should return null for unset values', done => async function () {
         // arrange
         const key = keysNotPresent[0];
 
@@ -165,7 +166,7 @@ describe('Configuration provider', () => {
         expect(secret).toBeNull();
     }().then(done, done.fail));
 
-    it('get secret should return already-defined values', done => async function() {
+    it('get secret should return already-defined values', done => async function () {
         // arrange
         const key = 'SECRET_KEY_1';
 
@@ -180,12 +181,12 @@ describe('Configuration provider', () => {
 describe('Configuration provider with no Mongo URI', () => {
     let configFilename: string;
 
-    beforeEach( () => {
+    beforeEach(() => {
         // Prevent state leakage between specs
         configFilename = `${__dirname}/../test/user-config-no-uri.json`;
     });
 
-    it('should log the lack of URI', done => async function() {
+    it('should log the lack of URI', done => async function () {
         const logger = jasmine.createSpy('logger');
         const initializeParams = {
             configFilename: configFilename,
@@ -195,11 +196,11 @@ describe('Configuration provider with no Mongo URI', () => {
         expect(logger).toHaveBeenCalled();
     }().then(done, done.fail));
 
-    it('should throw if there are unsatisfied required keys', done => async function() {
+    it('should throw if there are unsatisfied required keys', done => async function () {
         const initializeParams = {
             requiredKeys: ['REQUIRED_KEY'],
             configFilename: configFilename,
-            logger: () => {}  // silence logs
+            logger: () => { }  // silence logs
         };
         try {
             await config.initialize(initializeParams);
@@ -241,7 +242,50 @@ describe('Configuration loaded using wrap', () => {
 
         config.wrap(inputConfig);
 
-        expect(config.get([ 'a', 'b' ])).toBe('x');
+        expect(config.get(['a', 'b'])).toBe('x');
+    });
+
+    it('getSecret should work if a keyvault configuration is provided', done => {
+        spyOn(KeyVaultConfiguration.prototype, 'getSecret').and.returnValue(Promise.resolve({
+            value: 'secret'
+        }));
+
+        config.wrap({
+            KEYVAULT: {
+                clientId: 'clientId',
+                certFile: 'path/to/file.pem',
+                certThumbprint: 'abcd'
+            },
+            SECRET_KEY: {
+                id: 'http://some.vault.azure.com/secrets/id/version'
+            }
+        });
+
+        config.getSecret('SECRET_KEY')
+            .then(result => {
+                expect(result.value).toBe('secret');
+                done();
+            })
+            .catch(fail);
+    });
+
+    it('getSecret should fail if a keyvault configuration is not provided', done => {
+        spyOn(KeyVaultConfiguration.prototype, 'getSecret').and.returnValue(Promise.resolve({
+            value: 'secret'
+        }));
+
+        config.wrap({
+            SECRET_KEY: {
+                id: 'http://some.vault.azure.com/secrets/id/version'
+            }
+        });
+
+        config.getSecret('SECRET_KEY')
+            .then(fail)
+            .catch(e => {
+                expect(e.message).toEqual(jasmine.stringMatching(/provider not initialized/));
+                done();
+            });
     });
 
     it('wrap should clear previous values', () => {
